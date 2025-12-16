@@ -2,56 +2,106 @@
 
 import logging
 import re
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
-from sqlalchemy import MetaData, Table, text
 from time import sleep
+from typing import Dict, List
+
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+
+from sqlalchemy import MetaData, Table, text
+from sqlalchemy.engine import Engine
+
+from selenium_utils import create_webdriver, create_wait
 
 logger = logging.getLogger(__name__)
 
 
-def update_amazon_product_list(engine):
+AMAZON_WISHLIST_URLS = [
+    "https://www.amazon.com/hz/wishlist/ls/1VHVB48YFSXWJ?ref_=wl_share"
+]
 
-    productList = []
-    urls = ["https://www.amazon.com/hz/wishlist/ls/1VHVB48YFSXWJ?ref_=wl_share"]
 
-    options = Options()
-    options.add_argument("--headless")
-    options.add_argument("window-size=1400,1500")
+def scroll_until_complete(driver, pause_seconds: float = 1.5, max_attempts: int = 20):
+    """
+    Scroll down until no new content loads.
+    """
+    last_height = 0
 
-    for url in urls:
+    for _ in range(max_attempts):
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        sleep(pause_seconds)
 
-        with webdriver.Chrome(options=options) as driver:
-            wait = WebDriverWait(driver, 30)
+        new_height = driver.execute_script("return document.body.scrollHeight")
+        if new_height == last_height:
+            return
+
+        last_height = new_height
+
+
+def _extract_products_from_page(driver) -> List[Dict[str, str]]:
+    """Extract product records from the current wishlist page."""
+    wait = create_wait(driver, 30)
+
+    items_container = wait.until(EC.presence_of_element_located((By.ID, "g-items")))
+
+    products: List[Dict[str, str]] = []
+
+    for item in items_container.find_elements(By.CSS_SELECTOR, "li"):
+        links = item.find_elements(By.CLASS_NAME, "a-link-normal")
+        if not links:
+            continue
+
+        text_lines = item.text.split("\n")
+
+        try:
+            product_id = links[0].get_attribute("href").split("/")[4]
+        except (IndexError, AttributeError):
+            logger.warning("Failed to parse product ID, skipping item")
+            continue
+
+        name_index = 1 if re.search("Best Seller", text_lines[0]) else 0
+
+        products.append(
+            {
+                "id": product_id,
+                "name": text_lines[name_index],
+                "store": "Amazon",
+            }
+        )
+
+    return products
+
+
+def update_amazon_product_list(engine: Engine) -> None:
+    """
+    Refresh the Amazon product list in the database.
+    """
+    logger.info("Starting Amazon product list update")
+
+    all_products: List[Dict[str, str]] = []
+
+    for url in AMAZON_WISHLIST_URLS:
+        logger.info("Loading wishlist URL: %s", url)
+
+        with create_webdriver() as driver:
             driver.get(url)
 
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            # Force lazy-loaded items to render
+            scroll_until_complete(driver)
 
-            sleep(10)
+            products = _extract_products_from_page(driver)
+            all_products.extend(products)
 
-            list = wait.until(EC.presence_of_element_located((By.ID, "g-items")))
+            logger.info("Extracted %d products", len(products))
 
-            listItems = list.find_elements(By.CSS_SELECTOR, "li")
+    if not all_products:
+        logger.warning("No Amazon products found — skipping DB update")
+        return
 
-            for item in listItems:
-                links = item.find_elements(By.CLASS_NAME, "a-link-normal")
+    product_table = Table("product", MetaData(), autoload_with=engine)
 
-                if links:
-                    textStrings = item.text.split("\n")
-
-                    id = links[0].get_attribute("href").split("/")[4]
-                    name = textStrings[
-                        1 if re.search("Best Seller", textStrings[0]) else 0
-                    ]
-
-                    productList.append({"id": id, "name": name, "store": "Amazon"})
-
-    query = text("DELETE FROM product WHERE store = 'Amazon'")
     with engine.begin() as connection:
-        connection.execute(query)
-        connection.execute(
-            Table("product", MetaData(), autoload_with=engine).insert(), productList
-        )
+        connection.execute(text("DELETE FROM product WHERE store = 'Amazon'"))
+        connection.execute(product_table.insert(), all_products)
+
+    logger.info("Amazon product list update complete")
