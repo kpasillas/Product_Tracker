@@ -1,10 +1,13 @@
 import os
+from dotenv import load_dotenv
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import URL
 
 
 def get_mysql_engine():
+
+    load_dotenv()
 
     connection_url = URL.create(
         "mysql+pymysql",
