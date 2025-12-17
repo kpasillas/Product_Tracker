@@ -32,6 +32,7 @@ Pygments==2.19.2
 PyMySQL==1.1.2
 PySocks==1.7.1
 python-dateutil==2.9.0.post0
+python-dotenv==1.2.1
 pytz==2025.2
 pyzmq==27.1.0
 selenium==4.38.0
