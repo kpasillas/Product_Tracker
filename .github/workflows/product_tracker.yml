@@ -27,11 +27,16 @@ jobs:
           source .venv/bin/activate
           pip install -r requirements.txt
 
+      - name: Use the environment secret
+        # Reference the secret using the standard secrets context
+        run: |
+          echo "Deploying with API Key: ${{ secrets.MYSQL_USERNAME }}"
+
       - name: Run scraper
         env:
           MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
-          MYSQL_USERNAME: ${{ secrets.MYSQL_USER }}
+          MYSQL_USERNAME: ${{ secrets.MYSQL_USERNAME }}
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
         run: |
           source .venv/bin/activate
-          python run_product_tracker.py
+          # python run_product_tracker.py
