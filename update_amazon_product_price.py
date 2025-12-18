@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 
 
 AMAZON_PRODUCT_URL_BASE = "https://amazon.com/dp/"
-MAX_RETRIES = 5
-RETRY_DELAY_SECONDS = 2
+MAX_RETRIES = 10
+RETRY_DELAY_SECONDS = 5
 
 
 def _extract_price_from_page(driver) -> float:
@@ -29,7 +29,7 @@ def _extract_price_from_page(driver) -> float:
     Preference order:
         Kindle > Paperback > Hardcover
     """
-    wait = create_wait(driver, 10)
+    wait = create_wait(driver, 30)
 
     toggles = wait.until(
         EC.presence_of_all_elements_located(

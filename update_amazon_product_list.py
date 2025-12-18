@@ -8,10 +8,10 @@ from typing import Dict, List
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 
+from selenium_utils import create_webdriver, wait_for_amazon_wishlist_items
+
 from sqlalchemy import MetaData, Table, text
 from sqlalchemy.engine import Engine
-
-from selenium_utils import create_webdriver, create_wait
 
 logger = logging.getLogger(__name__)
 
@@ -40,9 +40,9 @@ def scroll_until_complete(driver, pause_seconds: float = 1.5, max_attempts: int 
 
 def _extract_products_from_page(driver) -> List[Dict[str, str]]:
     """Extract product records from the current wishlist page."""
-    wait = create_wait(driver, 30)
+    wait_for_amazon_wishlist_items(driver)
 
-    items_container = wait.until(EC.presence_of_element_located((By.ID, "g-items")))
+    items_container = driver.find_element(By.ID, "g-items")
 
     products: List[Dict[str, str]] = []
 
