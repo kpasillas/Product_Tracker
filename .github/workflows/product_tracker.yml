@@ -1,0 +1,36 @@
+name: Product Tracker
+
+on:
+  schedule:
+    - cron: "0 3 * * *"   # daily
+  workflow_dispatch:      # manual trigger
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@v6.1.0
+        with:
+          python-version: "3.13.5"
+
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v2.1.0
+
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install -r requirements.txt
+
+      - name: Run scraper
+        env:
+          MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+          MYSQL_USERNAME: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+        run: |
+          source .venv/bin/activate
+          python run_product_tracker.py
