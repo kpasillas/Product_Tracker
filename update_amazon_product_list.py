@@ -8,7 +8,13 @@ from typing import Dict, List
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 
-from selenium_utils import create_webdriver, wait_for_amazon_wishlist_items
+from selenium_utils import (
+    create_webdriver,
+    create_wait,
+    safe_get,
+    scroll_to_bottom,
+    wait_for_amazon_list_items,
+)
 
 from sqlalchemy import MetaData, Table, text
 from sqlalchemy.engine import Engine
@@ -40,7 +46,7 @@ def scroll_until_complete(driver, pause_seconds: float = 1.5, max_attempts: int 
 
 def _extract_products_from_page(driver) -> List[Dict[str, str]]:
     """Extract product records from the current wishlist page."""
-    wait_for_amazon_wishlist_items(driver)
+    wait_for_amazon_list_items(driver)
 
     items_container = driver.find_element(By.ID, "g-items")
 
@@ -84,10 +90,10 @@ def update_amazon_product_list(engine: Engine) -> None:
         logger.info("Loading wishlist URL: %s", url)
 
         with create_webdriver() as driver:
-            driver.get(url)
+            safe_get(driver, url)
 
             # Force lazy-loaded items to render
-            scroll_until_complete(driver)
+            scroll_to_bottom(driver)
 
             products = _extract_products_from_page(driver)
             all_products.extend(products)

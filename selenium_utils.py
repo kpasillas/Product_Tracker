@@ -1,191 +1,183 @@
 import logging
-import time
-from contextlib import contextmanager
-from typing import Generator, Optional
+import random
+from time import sleep
+from typing import Tuple
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, WebDriverException
 
 logger = logging.getLogger(__name__)
 
 
-# ─────────────────────────────────────────────────────────────
-# Defaults tuned for headless Linux + Amazon
-# ─────────────────────────────────────────────────────────────
-
-DEFAULT_WINDOW_WIDTH = 1400
-DEFAULT_WINDOW_HEIGHT = 2000
-DEFAULT_PAGE_LOAD_TIMEOUT = 30
-DEFAULT_WAIT_TIMEOUT = 30
-
-
-# ─────────────────────────────────────────────────────────────
+# -----------------------------
 # Chrome configuration
-# ─────────────────────────────────────────────────────────────
-
-
-def _build_chrome_options(headless: bool) -> Options:
+# -----------------------------
+def _build_chrome_options(headless: bool = True) -> Options:
     options = Options()
 
-    options.add_argument(
-        f"--window-size={DEFAULT_WINDOW_WIDTH},{DEFAULT_WINDOW_HEIGHT}"
-    )
-
     if headless:
-        # New headless mode is much more reliable
+        # Use modern headless mode (critical for CI)
         options.add_argument("--headless=new")
 
-    # Required for Linux VPS stability
+    # Required for CI / GitHub Actions
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
 
-    # Reduce automation fingerprinting
-    options.add_experimental_option("excludeSwitches", ["enable-automation"])
-    options.add_experimental_option("useAutomationExtension", False)
+    # Stability / performance
+    options.add_argument("--disable-gpu")
+    options.add_argument("--disable-infobars")
+    options.add_argument("--disable-extensions")
+    options.add_argument("--disable-background-networking")
+    options.add_argument("--disable-features=Translate,BackForwardCache")
+
+    # Rendering consistency
+    options.add_argument("--window-size=1920,1080")
+    options.add_argument("--lang=en-US")
+
+    # Reduce bot fingerprinting
+    options.add_argument(
+        "--user-agent=Mozilla/5.0 (X11; Linux x86_64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0.0.0 Safari/537.36"
+    )
 
     return options
 
 
-@contextmanager
-def create_webdriver(
-    *,
-    headless: bool = True,
-    page_load_timeout: int = DEFAULT_PAGE_LOAD_TIMEOUT,
-) -> Generator[webdriver.Chrome, None, None]:
+# -----------------------------
+# WebDriver factory
+# -----------------------------
+def create_webdriver(*, headless: bool = True, timeout: int = 30) -> webdriver.Chrome:
     """
-    Context-managed Chrome WebDriver factory.
+    Create a hardened Chrome WebDriver + WebDriverWait.
 
-    Guarantees:
-    - proper cleanup
-    - consistent configuration
-    - Linux + headless compatibility
+    Always use this factory. Never instantiate drivers directly.
     """
-    options = _build_chrome_options(headless)
+    options = _build_chrome_options(headless=headless)
+
     driver = webdriver.Chrome(options=options)
+    driver.set_page_load_timeout(timeout)
 
-    driver.set_page_load_timeout(page_load_timeout)
-
-    # Further reduce detection
-    driver.execute_script(
-        "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
-    )
-
-    logger.debug("Chrome WebDriver started (headless=%s)", headless)
-
-    try:
-        yield driver
-    finally:
-        logger.debug("Closing Chrome WebDriver")
-        driver.quit()
+    return driver
 
 
 def create_wait(
     driver: webdriver.Chrome,
-    timeout: int = DEFAULT_WAIT_TIMEOUT,
+    timeout: int = 30,
 ) -> WebDriverWait:
     """Standard WebDriverWait factory."""
     return WebDriverWait(driver, timeout)
 
 
-# ─────────────────────────────────────────────────────────────
-# Amazon-safe scrolling & waits
-# ─────────────────────────────────────────────────────────────
-
-
-def scroll_until_complete(
+# -----------------------------
+# Navigation helpers
+# -----------------------------
+def safe_get(
     driver: webdriver.Chrome,
+    url: str,
     *,
-    pause_seconds: float = 1.5,
-    max_attempts: int = 25,
+    retries: int = 3,
+    retry_delay: float = 2.0,
 ) -> None:
     """
-    Incrementally scroll the page until no new content loads.
+    Navigate to a URL with retries and jitter.
+    """
+    for attempt in range(1, retries + 1):
+        try:
+            logger.info("Navigating to %s (attempt %d)", url, attempt)
+            driver.get(url)
+            return
+        except (TimeoutException, WebDriverException) as exc:
+            if attempt == retries:
+                logger.error("Failed to load %s", url)
+                raise
 
-    Critical for:
-    - Amazon wishlist pages
-    - headless Linux Chrome
+            jitter = random.uniform(0.5, 1.5)
+            logger.warning(
+                "Navigation failed (%s), retrying in %.2fs",
+                exc.__class__.__name__,
+                retry_delay + jitter,
+            )
+            sleep(retry_delay + jitter)
+
+
+# -----------------------------
+# Scrolling / lazy-load helpers
+# -----------------------------
+def scroll_to_bottom(
+    driver: webdriver.Chrome,
+    *,
+    pause: float = 0.5,
+    max_attempts: int = 10,
+) -> None:
+    """
+    Force lazy-loaded content to render (critical in headless mode).
+    """
+    last_height = driver.execute_script("return document.body.scrollHeight")
+
+    for _ in range(max_attempts):
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        sleep(pause)
+
+        new_height = driver.execute_script("return document.body.scrollHeight")
+        if new_height == last_height:
+            break
+        last_height = new_height
+
+
+# -----------------------------
+# Amazon-specific waits
+# -----------------------------
+# def wait_for_amazon_list_items(
+#     driver: webdriver.Chrome,
+#     wait: WebDriverWait,
+#     *,
+#     min_items: int = 5,
+# ) -> None:
+#     """
+#     Wait until Amazon wishlist items are *actually rendered*.
+
+#     presence_of_element_located is NOT sufficient on Linux headless.
+#     """
+#     logger.info("Waiting for Amazon wishlist container")
+
+#     wait.until(EC.visibility_of_element_located((By.ID, "g-items")))
+
+#     logger.info("Waiting for wishlist items to populate")
+
+#     wait.until(
+#         lambda d: len(d.find_elements(By.CSS_SELECTOR, "#g-items li")) >= min_items
+#     )
+
+
+def wait_for_amazon_list_items(
+    driver, pause_seconds: float = 1.5, max_attempts: int = 20
+):
+    """
+    Scroll down until no new content loads.
     """
     last_height = 0
 
-    for attempt in range(max_attempts):
-        driver.execute_script("window.scrollBy(0, document.body.scrollHeight);")
-        time.sleep(pause_seconds)
+    for _ in range(max_attempts):
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        sleep(pause_seconds)
 
         new_height = driver.execute_script("return document.body.scrollHeight")
-
-        logger.debug(
-            "Scroll attempt %d: height %s → %s",
-            attempt + 1,
-            last_height,
-            new_height,
-        )
-
         if new_height == last_height:
             return
 
         last_height = new_height
 
-    logger.warning("Reached max scroll attempts without settling")
 
-
-def wait_for_dom_items(
-    driver: webdriver.Chrome,
-    *,
-    container_id: str,
-    item_selector: Optional[str] = None,
-    timeout: int = DEFAULT_WAIT_TIMEOUT,
-) -> None:
+# -----------------------------
+# Utility helpers
+# -----------------------------
+def random_delay(min_seconds: float = 1.0, max_seconds: float = 3.0) -> None:
     """
-    Wait for a container (and optionally its children) to exist in the DOM.
-
-    This avoids Selenium's fragile `presence_of_element_located`
-    on lazy-loaded JS sites.
+    Add jitter between actions to reduce throttling.
     """
-    end = time.time() + timeout
-
-    while time.time() < end:
-        exists = driver.execute_script(
-            """
-            const container = document.getElementById(arguments[0]);
-            if (!container) return false;
-
-            if (!arguments[1]) return true;
-
-            return container.querySelectorAll(arguments[1]).length > 0;
-            """,
-            container_id,
-            item_selector,
-        )
-
-        if exists:
-            return
-
-        # Trigger IntersectionObserver / lazy loading
-        driver.execute_script("window.scrollBy(0, window.innerHeight);")
-        time.sleep(1)
-
-    raise TimeoutException(
-        f"Timed out waiting for #{container_id}"
-        + (f" {item_selector}" if item_selector else "")
-    )
-
-
-def wait_for_amazon_wishlist_items(
-    driver: webdriver.Chrome,
-    timeout: int = DEFAULT_WAIT_TIMEOUT,
-) -> None:
-    """
-    Amazon-specific wait for wishlist items to fully load.
-    """
-    logger.debug("Waiting for Amazon wishlist items")
-
-    scroll_until_complete(driver)
-
-    wait_for_dom_items(
-        driver,
-        container_id="g-items",
-        item_selector="li",
-        timeout=timeout,
-    )
+    sleep(random.uniform(min_seconds, max_seconds))

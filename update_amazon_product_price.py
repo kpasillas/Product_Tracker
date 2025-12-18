@@ -11,7 +11,7 @@ from selenium.common.exceptions import TimeoutException
 from sqlalchemy import MetaData, Table, text
 from sqlalchemy.engine import Engine
 
-from selenium_utils import create_webdriver, create_wait
+from selenium_utils import create_webdriver, create_wait, safe_get, random_delay
 from get_report_id import get_report_id
 
 logger = logging.getLogger(__name__)
@@ -22,15 +22,13 @@ MAX_RETRIES = 10
 RETRY_DELAY_SECONDS = 5
 
 
-def _extract_price_from_page(driver) -> float:
+def _extract_price_from_page(wait) -> float:
     """
     Extract the most relevant price from an Amazon product page.
 
     Preference order:
         Kindle > Paperback > Hardcover
     """
-    wait = create_wait(driver, 30)
-
     toggles = wait.until(
         EC.presence_of_all_elements_located(
             (By.CLASS_NAME, "a-button.a-spacing-none.a-button-toggle.format")
@@ -65,8 +63,10 @@ def get_product_price(url: str) -> float:
     with create_webdriver() as driver:
         for attempt in range(1, MAX_RETRIES + 1):
             try:
-                driver.get(url)
-                return _extract_price_from_page(driver)
+                wait = create_wait(driver)
+                safe_get(driver, url)
+                random_delay()
+                return _extract_price_from_page(wait)
 
             except TimeoutException:
                 logger.warning(
