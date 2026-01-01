@@ -41,7 +41,11 @@ def _extract_price_from_page(wait) -> float:
         title = toggle.find_element(By.CLASS_NAME, "slot-title").text
 
         price_text = toggle.find_element(By.CLASS_NAME, "slot-price").text
-        prices[title] = float(price_text.split("$")[-1])
+
+        try:
+            prices[title] = float(price_text.split("$")[-1])
+        except (TypeError, ValueError):
+            prices[title] = None
 
         extra_messages = toggle.find_elements(By.CLASS_NAME, "slot-extraMessage")
         if extra_messages and "$" in extra_messages[0].text:
