@@ -11,7 +11,6 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Check if LINODE_TOKEN is passed
-        if: $LINODE_TOKEN
         run: echo "LINODE_TOKEN is set and available."
 
       - name: Create Linode
