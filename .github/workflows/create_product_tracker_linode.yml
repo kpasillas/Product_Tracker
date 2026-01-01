@@ -23,5 +23,4 @@ jobs:
             --image "linode/ubuntu22.04" \
             --region "us-lax" \
             --type "g6-nanode-1" \
-            --label "product_tracker_linode" \
-            --user_data "$(cat .github/workflows/cloud-init.yaml)"
+            --label "product_tracker_linode"
