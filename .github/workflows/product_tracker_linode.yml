@@ -8,11 +8,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v4
+      
       - name: Check if LINODE_TOKEN is passed
         if: ${{ secrets.LINODE_TOKEN }}
         run: echo "LINODE_TOKEN is set and available."
-      
-      - uses: actions/checkout@v4
 
       - name: Create Linode
         run: |
