@@ -1,97 +1,22 @@
 #cloud-config
-
-# -----------------------------
-# System updates
-# -----------------------------
 package_update: true
 package_upgrade: true
 
-# -----------------------------
-# Required packages
-# -----------------------------
 packages:
   - git
   - python3
   - python3-venv
-  - python3-pip
-  - mailutils
-  - ca-certificates
-  - curl
-  - unzip
-
-  # Chrome / Selenium dependencies
   - chromium-browser
   - chromium-chromedriver
-  - fonts-liberation
-  - libnss3
-  - libatk-bridge2.0-0
-  - libgtk-3-0
-  - libx11-xcb1
-  - libxcomposite1
-  - libxdamage1
-  - libxrandr2
-  - libgbm1
-  - libasound2
+  - mailutils
 
-# -----------------------------
-# Users
-# -----------------------------
-users:
-  - default
-  - name: kpasillas
-    gecos: Product Tracker User
-    sudo: ALL=(ALL) NOPASSWD:ALL
-    shell: /bin/bash
-    groups: sudo
-    lock_passwd: true
-
-# -----------------------------
-# Environment variables
-# -----------------------------
-write_files:
-  - path: /etc/profile.d/product_tracker.sh
-    permissions: "0644"
-    content: |
-      export PYTHONUNBUFFERED=1
-      export LANG=en_US.UTF-8
-      export LC_ALL=en_US.UTF-8
-
-# -----------------------------
-# Main execution
-# -----------------------------
 runcmd:
-  # Ensure home directory ownership
-  - chown -R kpasillas:kpasillas /home/kpasillas
-
-  # Switch to user context and run tracker
-  - |
-    su - kpasillas -c "
-      set -e
-
-      echo '📦 Starting Product Tracker bootstrap'
-
-      cd /home/kpasillas
-
+  - su - kpasillas -c "
+      cd /home/kpasillas &&
       if [ ! -d Product_Tracker ]; then
-        echo '📥 Cloning repository'
         git clone https://github.com/kpasillas/Product_Tracker.git
-      else
-        echo '🔄 Updating repository'
-        cd Product_Tracker
-        git pull --ff-only
-      fi
-
-      cd Product_Tracker
-
-      if [ ! -x run_product_tracker.sh ]; then
-        echo '❌ run_product_tracker.sh not executable'
-        exit 1
-      fi
-
-      echo '🚀 Running Product Tracker'
+      fi &&
+      cd Product_Tracker &&
       ./run_product_tracker.sh
     "
-
-  # Shutdown after completion
-  - echo "🛑 Job complete — shutting down instance"
   - shutdown -h now
