@@ -22,7 +22,7 @@ jobs:
               "image": "linode/ubuntu22.04",
               "root_pass": "TEMP_PASSWORD",
               "authorized_keys": [],
-              "user_data": "'"$(base64 -w0 cloud-init.yaml)"'"
+              "user_data": "'"$(base64 -w0 workflows/cloud-init.yaml)"'"
             }'
         env:
           LINODE_TOKEN: ${{ secrets.LINODE_TOKEN }}
