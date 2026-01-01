@@ -29,4 +29,4 @@ jobs:
             }'
         env:
           LINODE_TOKEN: ${{ secrets.LINODE_TOKEN }}
-          TEST_VAR: ${{ secrets.TEST_VAR }}
+          TEST_VAR: "Test Var"
