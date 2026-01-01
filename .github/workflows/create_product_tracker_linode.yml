@@ -1,0 +1,26 @@
+name: Run Product Tracker (Linode)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Linode CLI
+        uses: linode/action-linode-cli@v1.1.0
+        with:
+          token: ${{ secrets.LINODE_TOKEN }} # Store your Linode API Token as a GitHub secret
+  
+      - name: Deploy Linode with cloud-init user data
+        run: |
+          linode-cli linodes create \
+            --root_pass "YourSecureRootPassword" \
+            --image "linode/ubuntu22.04" \
+            --region "us-lax" \
+            --type "g6-nanode-1" \
+            --label "product_tracker_linode" \
+            --user_data "$(cat .github/workflows/cloud-init.yaml)"
