@@ -10,8 +10,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Check if LINODE_TOKEN is passed
-        run: echo "LINODE_TOKEN is set and available."
+      - name: Check if TEST_VAR is passed
+        run: echo "TEST_VAR is set and available: $TEST_VAR"
 
       - name: Create Linode
         run: |
@@ -29,3 +29,4 @@ jobs:
             }'
         env:
           LINODE_TOKEN: ${{ secrets.LINODE_TOKEN }}
+          TEST_VAR: ${{ secrets.TEST_VAR }}
