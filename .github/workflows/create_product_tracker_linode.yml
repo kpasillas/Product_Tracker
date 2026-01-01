@@ -24,4 +24,4 @@ jobs:
             --region "us-lax" \
             --type "g6-nanode-1" \
             --label "product_tracker_linode" \
-            --user_data "$(cat .github/workflows/cloud-init.yaml)"
+            --metadata.user_data "$(cat .github/workflows/cloud-init.yaml | base64 -w 0)"
