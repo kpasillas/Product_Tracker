@@ -6,6 +6,7 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
+    environment: env
 
     steps:
       - uses: actions/checkout@v4
@@ -13,7 +14,7 @@ jobs:
       - name: Install Linode CLI
         uses: linode/action-linode-cli@v1.1.0
         with:
-          token: ${{ env.LINODE_TOKEN }} # Store your Linode API Token as a GitHub secret
+          token: ${{ secrets.LINODE_TOKEN }} # Store your Linode API Token as a GitHub secret
   
       - name: Deploy Linode with cloud-init user data
         run: |
