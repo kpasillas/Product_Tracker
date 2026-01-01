@@ -1,22 +1,120 @@
 #cloud-config
+
+# -----------------------------
+# System updates
+# -----------------------------
 package_update: true
 package_upgrade: true
 
+# -----------------------------
+# Required system packages
+# -----------------------------
 packages:
   - git
-  - python3
-  - python3-venv
-  - chromium-browser
-  - chromium-chromedriver
+  - build-essential
+  - libssl-dev
+  - zlib1g-dev
+  - libbz2-dev
+  - libreadline-dev
+  - libsqlite3-dev
+  - libffi-dev
+  - libncursesw5-dev
+  - xz-utils
+  - tk-dev
+  - libxml2-dev
+  - libxmlsec1-dev
+  - liblzma-dev
+  - curl
+  - ca-certificates
   - mailutils
 
+  # Selenium / Chrome
+  - chromium-browser
+  - chromium-chromedriver
+  - fonts-liberation
+  - libnss3
+  - libatk-bridge2.0-0
+  - libgtk-3-0
+  - libx11-xcb1
+  - libxcomposite1
+  - libxdamage1
+  - libxrandr2
+  - libgbm1
+  - libasound2
+
+# -----------------------------
+# Users
+# -----------------------------
+users:
+  - default
+  - name: kpasillas
+    gecos: Product Tracker User
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    groups: sudo
+    lock_passwd: true
+
+# -----------------------------
+# Environment
+# -----------------------------
+write_files:
+  - path: /etc/profile.d/product_tracker.sh
+    permissions: "0644"
+    content: |
+      export PYTHONUNBUFFERED=1
+      export LANG=en_US.UTF-8
+      export LC_ALL=en_US.UTF-8
+
+# -----------------------------
+# Main execution
+# -----------------------------
 runcmd:
-  - su - kpasillas -c "
-      cd /home/kpasillas &&
+  # Ensure correct ownership
+  - chown -R kpasillas:kpasillas /home/kpasillas
+
+  # Build Python 3.13.5
+  - |
+    cd /usr/src
+    curl -O https://www.python.org/ftp/python/3.13.5/Python-3.13.5.tgz
+    tar xzf Python-3.13.5.tgz
+    cd Python-3.13.5
+    ./configure --enable-optimizations
+    make -j$(nproc)
+    make altinstall
+
+  # Verify install
+  - /usr/local/bin/python3.13 --version
+
+  # Run tracker as user
+  - |
+    su - kpasillas -c "
+      set -e
+
+      echo '📦 Bootstrapping Product Tracker'
+
+      cd /home/kpasillas
+
       if [ ! -d Product_Tracker ]; then
         git clone https://github.com/kpasillas/Product_Tracker.git
-      fi &&
-      cd Product_Tracker &&
-      ./run_product_tracker.sh
+      fi
+
+      cd Product_Tracker
+
+      echo '🐍 Creating virtual environment (Python 3.13.5)'
+      /usr/local/bin/python3.13 -m venv .venv
+
+      source .venv/bin/activate
+
+      echo '⬆️  Upgrading pip'
+      python -m pip install --upgrade pip
+
+      echo '📦 Installing requirements'
+      pip install -r requirements.txt
+
+      echo '🚀 Running Product Tracker'
+      python run_product_tracker.py
     "
+
+  # Shutdown after completion
+  - echo '🛑 Job complete — shutting down instance'
   - shutdown -h now
