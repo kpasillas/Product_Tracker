@@ -19,8 +19,9 @@ jobs:
       - name: Deploy Linode with cloud-init user data
         run: |
           linode-cli linodes create \
-            --root_pass "YourSecureRootPassword" \
+            --root_pass ${{ secrets.ROOT_PASSWORD }} \
             --image "linode/ubuntu22.04" \
             --region "us-lax" \
             --type "g6-nanode-1" \
-            --label "product_tracker_linode"
+            --label "product_tracker_linode" \
+            --user_data "$(cat .github/workflows/cloud-init.yaml)"
