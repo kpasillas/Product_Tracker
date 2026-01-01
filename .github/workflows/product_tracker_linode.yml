@@ -10,13 +10,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Check if TEST_VAR is passed
-        run: echo "TEST_VAR is set and available: $TEST_VAR"
-
       - name: Create Linode
         run: |
           curl -X POST https://api.linode.com/v4/linode/instances \
-            -H "Authorization: Bearer $LINODE_TOKEN" \
+            -H "Authorization: Bearer ${{ secrets.LINODE_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d '{
               "label": "product-tracker-run",
