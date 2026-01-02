@@ -13,9 +13,9 @@ jobs:
 
       - name: Create cloud-init from template
         run: |
-          export MYSQL_USERNAME="${{ secrets.MYSQL_USERNAME }}"
-          export MYSQL_PASSWORD="${{ secrets.MYSQL_PASSWORD }}"
-          export MYSQL_HOST="${{ secrets.MYSQL_HOST }}"
+          MYSQL_USERNAME="${{ secrets.MYSQL_USERNAME }}"
+          MYSQL_PASSWORD="${{ secrets.MYSQL_PASSWORD }}"
+          MYSQL_HOST="${{ secrets.MYSQL_HOST }}"
           
           envsubst < .github/workflows/cloud-init_template.yaml > .github/workflows/cloud-init.yaml
       
