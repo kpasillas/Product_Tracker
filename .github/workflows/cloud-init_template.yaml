@@ -9,7 +9,7 @@ package_upgrade: true
 # -----------------------------
 # Required system packages
 # -----------------------------
-packages:
+# packages:
   # - git
   # - build-essential
   # - libssl-dev
@@ -29,44 +29,44 @@ packages:
   # - mailutils
 
   # Selenium / Chrome
-  - chromium-browser
-  - chromium-chromedriver
-  - fonts-liberation
-  - libnss3
-  - libatk-bridge2.0-0
-  - libgtk-3-0
-  - libx11-xcb1
-  - libxcomposite1
-  - libxdamage1
-  - libxrandr2
-  - libgbm1
-  - libasound2
+  # - chromium-browser
+  # - chromium-chromedriver
+  # - fonts-liberation
+  # - libnss3
+  # - libatk-bridge2.0-0
+  # - libgtk-3-0
+  # - libx11-xcb1
+  # - libxcomposite1
+  # - libxdamage1
+  # - libxrandr2
+  # - libgbm1
+  # - libasound2
 
 # -----------------------------
 # Users
 # -----------------------------
-users:
-  - default
-  - name: kpasillas
-    gecos: Product Tracker User
-    sudo: ALL=(ALL) NOPASSWD:ALL
-    shell: /bin/bash
-    groups: sudo
-    lock_passwd: true
+# users:
+#   - default
+#   - name: kpasillas
+#     gecos: Product Tracker User
+#     sudo: ALL=(ALL) NOPASSWD:ALL
+#     shell: /bin/bash
+#     groups: sudo
+#     lock_passwd: true
 
 # -----------------------------
 # Environment
 # -----------------------------
 write_files:
-  - path: /etc/profile.d/product_tracker.sh
-    permissions: "0644"
-    content: |
-      export PYTHONUNBUFFERED=1
-      export LANG=en_US.UTF-8
-      export LC_ALL=en_US.UTF-8
+  # - path: /etc/profile.d/product_tracker.sh
+  #   permissions: "0644"
+  #   content: |
+  #     export PYTHONUNBUFFERED=1
+  #     export LANG=en_US.UTF-8
+  #     export LC_ALL=en_US.UTF-8
 
-  - path: /home/kpasillas/.env
-    owner: kpasillas:kpasillas
+  - path: /.env
+    # owner: kpasillas:kpasillas
     permissions: "0600"
     content: |
       MYSQL_USERNAME="MYSQL_USERNAME"
