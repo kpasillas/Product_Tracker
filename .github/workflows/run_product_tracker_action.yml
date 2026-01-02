@@ -11,12 +11,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set environment variables
+        env:
+          MYSQL_USERNAME:${{ secrets.MYSQL_USERNAME }}
+          MYSQL_PASSWORD:${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_HOST:${{ secrets.MYSQL_HOST }}
+
       - name: Create cloud-init from template
-        run: |
-          MYSQL_USERNAME="${{ secrets.MYSQL_USERNAME }}"
-          MYSQL_PASSWORD="${{ secrets.MYSQL_PASSWORD }}"
-          MYSQL_HOST="${{ secrets.MYSQL_HOST }}"
-          
+        run:
           envsubst < .github/workflows/cloud-init_template.yaml > .github/workflows/cloud-init.yaml
       
       - name: Install Linode CLI
