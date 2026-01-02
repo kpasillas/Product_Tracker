@@ -17,7 +17,7 @@ jobs:
           export MYSQL_PASSWORD="${{ secrets.MYSQL_PASSWORD }}"
           export MYSQL_HOST="${{ secrets.MYSQL_HOST }}"
           
-          envsubst < cloud-init_template.yaml > cloud-init.yaml
+          envsubst < .github/workflows/cloud-init_template.yaml > .github/workflows/cloud-init.yaml
       
       - name: Install Linode CLI
         uses: linode/action-linode-cli@v1.1.0
