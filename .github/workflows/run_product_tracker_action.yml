@@ -10,10 +10,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Create cloud-init from template
-        run: |
-          envsubst < .github/workflows/cloud-init_template.yaml > .github/workflows/cloud-init.yaml
       
       - name: Install Linode CLI
         uses: linode/action-linode-cli@v1.1.0
@@ -28,4 +24,4 @@ jobs:
             --region "us-lax" \
             --type "g6-nanode-1" \
             --label "product_tracker" \
-            --metadata.user_data "$(cat .github/workflows/cloud-init.yaml | base64 -w 0)"
+            --metadata.user_data "$(cat .github/workflows/cloud-init_template.yaml | base64 -w 0)"
