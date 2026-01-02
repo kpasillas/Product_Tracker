@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
 
 env:
-  MYSQL_USERNAME: "${{ secrets.MYSQL_USERNAME }}"
-  MYSQL_PASSWORD: "${{ secrets.MYSQL_PASSWORD }}"
-  MYSQL_HOST: "${{ secrets.MYSQL_HOST }}"
+  MYSQL_USERNAME: '${{ secrets.MYSQL_USERNAME }}'
+  MYSQL_PASSWORD: '${{ secrets.MYSQL_PASSWORD }}'
+  MYSQL_HOST: '${{ secrets.MYSQL_HOST }}'
 
 jobs:
   run:
