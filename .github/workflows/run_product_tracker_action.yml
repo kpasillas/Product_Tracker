@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set environment variables
-        env:
+        run:
           MYSQL_USERNAME:${{ secrets.MYSQL_USERNAME }}
           MYSQL_PASSWORD:${{ secrets.MYSQL_PASSWORD }}
           MYSQL_HOST:${{ secrets.MYSQL_HOST }}
