@@ -65,6 +65,7 @@ write_files:
       export LANG=en_US.UTF-8
       export LC_ALL=en_US.UTF-8
 
+write_files:
   - path: /home/kpasillas/.env
     owner: kpasillas:kpasillas
     permissions: "0600"
