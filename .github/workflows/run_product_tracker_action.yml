@@ -3,6 +3,11 @@ name: Run Product Tracker (Linode)
 on:
   workflow_dispatch:
 
+env:
+  MYSQL_USERNAME: "${{ secrets.MYSQL_USERNAME }}"
+  MYSQL_PASSWORD: "${{ secrets.MYSQL_PASSWORD }}"
+  MYSQL_HOST: "${{ secrets.MYSQL_HOST }}"
+
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -11,14 +16,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set environment variables
-        run:
-          MYSQL_USERNAME:${{ secrets.MYSQL_USERNAME }}
-          MYSQL_PASSWORD:${{ secrets.MYSQL_PASSWORD }}
-          MYSQL_HOST:${{ secrets.MYSQL_HOST }}
-
       - name: Create cloud-init from template
-        run:
+        run: |
           envsubst < .github/workflows/cloud-init_template.yaml > .github/workflows/cloud-init.yaml
       
       - name: Install Linode CLI
