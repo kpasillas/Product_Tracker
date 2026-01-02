@@ -65,6 +65,14 @@ write_files:
       export LANG=en_US.UTF-8
       export LC_ALL=en_US.UTF-8
 
+  - path: /home/kpasillas/.env
+    owner: kpasillas:kpasillas
+    permissions: "0600"
+    content: |
+      MYSQL_USERNAME="{{ MYSQL_USERNAME }}"
+      MYSQL_PASSWORD="{{ MYSQL_PASSWORD }}"
+      MYSQL_HOST="{{ MYSQL_HOST }}"
+
 # -----------------------------
 # Main execution
 # -----------------------------
@@ -98,6 +106,8 @@ runcmd:
         git clone https://github.com/kpasillas/Product_Tracker.git
       fi
 
+      mv .env Product_Tracker/
+      
       cd Product_Tracker
 
       echo '🐍 Creating virtual environment (Python 3.13.5)'
