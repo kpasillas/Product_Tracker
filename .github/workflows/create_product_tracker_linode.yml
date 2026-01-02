@@ -23,8 +23,8 @@ jobs:
             --image "linode/ubuntu22.04" \
             --region "us-lax" \
             --type "g6-nanode-1" \
-            --label "product_tracker_linode" \
-            --metadata.user_data "$(cat .github/workflows/cloud-init.yaml | base64 -w 0)"
+            --label "product_tracker" \
+            --metadata.user_data "$(cat .github/workflows/cloud-init.yaml | base64 -w 0)" \
             --metadata.user_data_vars '{
               "MYSQL_USERNAME": "${{ secrets.MYSQL_USERNAME }}",
               "MYSQL_PASSWORD": "${{ secrets.MYSQL_PASSWORD }}",
