@@ -15,6 +15,8 @@ packages:
   - ca-certificates
   - chromium-browser
   - chromium-chromedriver
+  - python3.13
+  - python3.13-venv
 
 ############################
 # Users
@@ -27,21 +29,6 @@ users:
     shell: /bin/bash
     groups: sudo
     lock_passwd: true
-
-############################
-# 2. PYTHON 3.13.5 INSTALL
-############################
-
-runcmd:
-# Build Python 3.13.5
-  - |
-    cd /usr/src
-    curl -O https://www.python.org/ftp/python/3.13.5/Python-3.13.5.tgz
-    tar xzf Python-3.13.5.tgz
-    cd Python-3.13.5
-    ./configure --enable-optimizations
-    make -j$(nproc)
-    make altinstall
 
 ############################
 # 3. SYSTEMD SERVICE
