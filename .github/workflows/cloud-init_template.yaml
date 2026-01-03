@@ -17,6 +17,18 @@ packages:
   - chromium-chromedriver
 
 ############################
+# Users
+############################
+users:
+  - default
+  - name: kpasillas
+    gecos: Product Tracker User
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    groups: sudo
+    lock_passwd: true
+
+############################
 # 2. PYTHON 3.13.5 INSTALL
 ############################
 
