@@ -13,7 +13,7 @@ packages:
   - curl
   - build-essential
   - ca-certificates
-  # - chromium-browser
+  - chromium-browser
   # - chromium-chromedriver
   # - python3.13
   # - python3.13-venv
