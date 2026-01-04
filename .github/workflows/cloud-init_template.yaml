@@ -67,12 +67,12 @@ write_files:
       USER="kpasillas"
       HOME_DIR="/home/${USER}"
       APP_DIR="${HOME_DIR}/Product_Tracker"
-      PYTHON="/usr/bin/python3.13"
+      PYTHON="/usr/local/bin/python3.13"
 
       echo "=== Product Tracker setup starting ==="
 
       # Build Python 3.13.5
-      if ! [ [ "$(python3.13 --version 2>&1)" =~ "Python 3.13" ] ]; then
+      if [[ ! "$(python3.13 --version 2>&1)" =~ "Python 3.13" ]]; then
         cd /usr/src
         curl -O https://www.python.org/ftp/python/3.13.5/Python-3.13.5.tgz
         tar xzf Python-3.13.5.tgz
