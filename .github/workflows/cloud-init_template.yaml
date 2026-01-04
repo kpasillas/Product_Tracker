@@ -15,8 +15,8 @@ packages:
   - ca-certificates
   - chromium-browser
   - chromium-chromedriver
-  # - python3.13
-  # - python3.13-venv
+  - python3.13
+  - python3.13-venv
 
 ############################
 # Users
