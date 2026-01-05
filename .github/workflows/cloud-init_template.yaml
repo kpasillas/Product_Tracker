@@ -105,12 +105,12 @@ write_files:
 # 5. EXECUTION + REBOOT LOGIC
 ############################
 
-# runcmd:
-  # - /usr/local/bin/product-tracker-setup.sh
-  # - |
-  #   if [ -f /var/run/reboot-required ]; then
-  #     echo "Reboot required, rebooting..."
-  #     reboot
-  #     else
-  #       systemctl start product-tracker.service
-    # fi
+runcmd:
+  - /usr/local/bin/product-tracker-setup.sh
+  - |
+      if [ -f /var/run/reboot-required ]; then
+        echo "Reboot required, rebooting..."
+        reboot
+      else
+        systemctl start product-tracker.service
+      fi
