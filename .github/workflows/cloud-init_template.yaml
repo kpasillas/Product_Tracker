@@ -87,9 +87,13 @@ write_files:
       if [[ ! "$(python3.13 --version 2>&1)" =~ "Python 3.13" ]]; then
         echo "Build Python - Start"
         curl -fsSL https://pyenv.run | bash
+        echo "Build Python - 1"
         echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
         echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
         echo 'eval "$(pyenv init - bash)"' >> ~/.bashrc
+        echo "Build Python - 2"
+        pyenv install 3.13.5
+        echo "Build Python - 3"
         
         # cd /usr/src
         # curl -O https://www.python.org/ftp/python/3.13.5/Python-3.13.5.tgz
