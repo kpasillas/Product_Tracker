@@ -15,8 +15,6 @@ packages:
   - ca-certificates
   - chromium-browser
   - chromium-chromedriver
-  - python3.13
-  - python3.13-venv
 
 ############################
 # Users
@@ -75,6 +73,7 @@ write_files:
 
       # Build Python 3.13.5
       if [[ ! "$(python3.13 --version 2>&1)" =~ "Python 3.13" ]]; then
+        echo "Build Python - Start"
         cd /usr/src
         curl -O https://www.python.org/ftp/python/3.13.5/Python-3.13.5.tgz
         tar xzf Python-3.13.5.tgz
@@ -82,10 +81,13 @@ write_files:
         ./configure --enable-optimizations
         make -j$(nproc)
         make altinstall
+        echo "Build Python - Finish"
       fi
 
       if [ ! -d "${APP_DIR}" ]; then
+        echo "Git Clone - Start"
         sudo -u "${USER}" git clone https://github.com/kpasillas/Product_Tracker.git "${APP_DIR}"
+        echo "Git Clone - Finish"
       fi
 
       sudo -u "${USER}" bash -lc "
