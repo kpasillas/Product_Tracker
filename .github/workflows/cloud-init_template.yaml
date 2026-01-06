@@ -80,7 +80,6 @@ write_files:
       HOME_DIR="/home/${USER}"
       APP_DIR="${HOME_DIR}/Product_Tracker"
       PYTHON="/usr/local/bin/python3.13"
-      PYENV_ROOT="/root/.pyenv"
 
       echo "=== Product Tracker setup starting ==="
 
@@ -88,6 +87,7 @@ write_files:
       echo "Build pyenv"
       if [ ! -d "/root/.pyenv" ]; then
         echo "Build pyenv - Start"
+        export HOME="/root/.pyenv"
         curl -fsSL https://pyenv.run | bash
         echo "Build pyenv - 1"
         echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
