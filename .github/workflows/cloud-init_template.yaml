@@ -87,7 +87,7 @@ write_files:
       echo "Build pyenv"
       if [ ! -d "/root/.pyenv" ]; then
         echo "Build pyenv - Start"
-        export HOME="/root/.pyenv"
+        export HOME="/root"
         curl -fsSL https://pyenv.run | bash
         echo "Build pyenv - 1"
         echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
