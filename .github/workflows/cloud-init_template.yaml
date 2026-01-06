@@ -85,7 +85,7 @@ write_files:
 
 
       echo "Build pyenv"
-      if [ ! -d "/root/.pyenv ]; then
+      if [ ! -d "/root/.pyenv" ]; then
         echo "Build pyenv - Start"
         curl -fsSL https://pyenv.run | bash
         echo "Build pyenv - 1"
