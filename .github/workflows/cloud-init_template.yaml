@@ -95,6 +95,7 @@ write_files:
         echo 'eval "$(pyenv init - bash)"' >> ~/.bashrc
         echo "Build pyenv - reboot"
         sudo shutdown -r now
+        sleep 10
         echo "Build pyenv - Finish"
       fi
 
