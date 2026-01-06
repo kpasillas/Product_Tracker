@@ -80,6 +80,7 @@ write_files:
       HOME_DIR="/home/${USER}"
       APP_DIR="${HOME_DIR}/Product_Tracker"
       PYTHON="/usr/local/bin/python3.13"
+      PYENV_ROOT="/root/.pyenv"
 
       echo "=== Product Tracker setup starting ==="
 
