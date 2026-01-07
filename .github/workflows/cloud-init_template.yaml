@@ -137,9 +137,10 @@ write_files:
 ############################
 
 runcmd:
-  echo "product-tracker-set - Start"
+  - echo "product-tracker-set - Start"
   - /usr/local/bin/product-tracker-setup.sh
-  echo "product-tracker-set - Finish"
+  - echo "product-tracker-set - Finish"
+  
   - |
     if [ -f /var/run/reboot-required ]; then
       echo "Reboot required - Start"
