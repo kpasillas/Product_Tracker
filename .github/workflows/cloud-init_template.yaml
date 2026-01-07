@@ -146,7 +146,6 @@ runcmd:
       echo "Reboot required - Start"
       echo "Reboot required, rebooting..."
       reboot
-      sleep 10
       echo "Reboot required - Finish"
     else
       echo "product-tracker.server - Start"
