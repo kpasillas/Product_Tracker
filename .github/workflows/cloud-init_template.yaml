@@ -59,6 +59,13 @@ write_files:
       StandardOutput=journal
       StandardError=journal
 
+      [Service]
+      Type=oneshot
+      User=kpasillas
+      WorkingDirectory=/home/kpasillas/Product_Tracker
+      ExecStart=/home/kpasillas/Product_Tracker/.venv/bin/python run_product_tracker.py
+      RemainAfterExit=true
+
       [Install]
       WantedBy=multi-user.target
 
@@ -105,6 +112,8 @@ write_files:
       if [[ ! "$(python3.13 --version 2>&1)" =~ "Python 3.13" ]]; then
         echo "Build Python - Start"
         /root/.pyenv/bin/pyenv install 3.13.5
+        pyenv global 3.13.5
+        echo python --version
         echo "Build Python - Finish"
       fi
 
@@ -120,7 +129,7 @@ write_files:
         echo "Setup venv - Start"
         cd ${APP_DIR}
         echo "Create venv"
-        ${PYTHON} -m venv .venv
+        python -m venv .venv
         echo "Activate venv"
         source .venv/bin/activate
         echo "Install pip packages"
