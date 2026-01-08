@@ -56,6 +56,8 @@ write_files:
       [Service]
       Type=simple
       ExecStart=/usr/local/bin/product-tracker-setup.sh
+      StandardOutput=journal
+      StandardError=journal
 
       [Service]
       Type=oneshot
