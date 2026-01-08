@@ -93,10 +93,16 @@ write_files:
         echo "Build pyenv - Start"
         export HOME="/root"
         curl -fsSL https://pyenv.run | bash
-        echo "Build pyenv - 1"
+        
+        echo "Build pyenv - set variables"
         echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
         echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
         echo 'eval "$(pyenv init - bash)"' >> ~/.bashrc
+
+        echo "Build pyenv - systemctl enable"
+        systemctl daemon-reload
+        systemctl enable product-tracker.service
+        
         echo "Build pyenv - exit"
         exit
         echo "Build pyenv - Finish"
