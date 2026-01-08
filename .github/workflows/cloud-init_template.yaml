@@ -54,6 +54,10 @@ write_files:
       Wants=network-online.target
 
       [Service]
+      Type=simple
+      ExecStart=/usr/local/bin/product-tracker-setup.sh
+
+      [Service]
       Type=oneshot
       User=kpasillas
       WorkingDirectory=/home/kpasillas/Product_Tracker
@@ -140,6 +144,10 @@ runcmd:
   - echo "product-tracker-set - Start"
   - /usr/local/bin/product-tracker-setup.sh
   - echo "product-tracker-set - Finish"
+
+  - echo "product-tracker.service - Start"
+  - systemctl start product-tracker.service
+  - echo "product-tracker.service - Finish"
   
   - |
     if [ -f /var/run/reboot-required ]; then
@@ -147,8 +155,8 @@ runcmd:
       echo "Reboot required, rebooting..."
       reboot
       echo "Reboot required - Finish"
-    else
-      echo "product-tracker.server - Start"
-      systemctl start product-tracker.service
-      echo "product-tracker.server - Finish"
+    # else
+    #   echo "product-tracker.server - Start"
+    #   systemctl start product-tracker.service
+    #   echo "product-tracker.server - Finish"
     fi
