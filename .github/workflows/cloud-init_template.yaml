@@ -59,13 +59,6 @@ write_files:
       StandardOutput=journal
       StandardError=journal
 
-      [Service]
-      Type=oneshot
-      User=kpasillas
-      WorkingDirectory=/home/kpasillas/Product_Tracker
-      ExecStart=/home/kpasillas/Product_Tracker/.venv/bin/python run_product_tracker.py
-      RemainAfterExit=true
-
       [Install]
       WantedBy=multi-user.target
 
