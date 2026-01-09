@@ -83,7 +83,7 @@ write_files:
       echo "Build pyenv"
       if [ ! -d "/root/.pyenv" ]; then
         echo "Build pyenv - Start"
-        export HOME="/root"
+        export HOME="~"
         curl -fsSL https://pyenv.run | bash
         
         echo "Build pyenv - set variables"
@@ -109,7 +109,7 @@ write_files:
         echo "Build Python - Start"
         /root/.pyenv/bin/pyenv install 3.13.5
         /root/.pyenv/bin/pyenv global 3.13.5
-        echo python --version
+        echo $(python --version)
         echo "Build Python - Finish"
       fi
 
