@@ -99,10 +99,6 @@ write_files:
         # echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.profile
         # echo 'eval "$(pyenv init --path)"' >> ~/.profile
 
-        echo "Build pyenv - systemctl enable"
-        systemctl daemon-reload
-        systemctl enable product-tracker.service
-
         echo "Build Python - Start"
         pyenv install 3.13.5
         pyenv global 3.13.5
@@ -160,6 +156,8 @@ runcmd:
   - echo "product-tracker-set - Finish"
 
   - echo "product-tracker.service - Start"
+  - systemctl daemon-reload
+  - systemctl enable product-tracker.service
   - systemctl start product-tracker.service
   - echo "product-tracker.service - Finish"
   
