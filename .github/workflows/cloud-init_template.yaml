@@ -87,21 +87,27 @@ write_files:
 
 
       echo "Build pyenv"
-      if [ ! -d "/.pyenv" ]; then
+      if [ ! -d "$PYENV_ROOT" ]; then
         echo "Build pyenv - Start"
         curl -fsSL https://pyenv.run | bash
         
-        echo "Build pyenv - set variables"
-        echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
-        echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
-        echo 'eval "$(pyenv init --path)"' >> ~/.bashrc
-        echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.profile
-        echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.profile
-        echo 'eval "$(pyenv init --path)"' >> ~/.profile
+        # echo "Build pyenv - set variables"
+        # echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
+        # echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
+        # echo 'eval "$(pyenv init --path)"' >> ~/.bashrc
+        # echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.profile
+        # echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.profile
+        # echo 'eval "$(pyenv init --path)"' >> ~/.profile
 
         echo "Build pyenv - systemctl enable"
         systemctl daemon-reload
         systemctl enable product-tracker.service
+
+        echo "Build Python - Start"
+        pyenv install 3.13.5
+        pyenv global 3.13.5
+        echo $(python --version)
+        echo "Build Python - Finish"
         
         echo "Build pyenv - exit"
         exit
@@ -109,14 +115,14 @@ write_files:
       fi
 
 
-      echo "Build Python 3.13.5"
-      if [[ ! "$(python3.13 --version 2>&1)" =~ "Python 3.13" ]]; then
-        echo "Build Python - Start"
-        /root/.pyenv/bin/pyenv install 3.13.5
-        /root/.pyenv/bin/pyenv global 3.13.5
-        echo $(python --version)
-        echo "Build Python - Finish"
-      fi
+      # echo "Build Python 3.13.5"
+      # if [[ ! "$(python3.13 --version 2>&1)" =~ "Python 3.13" ]]; then
+      #   echo "Build Python - Start"
+      #   /root/.pyenv/bin/pyenv install 3.13.5
+      #   /root/.pyenv/bin/pyenv global 3.13.5
+      #   echo $(python --version)
+      #   echo "Build Python - Finish"
+      # fi
 
       echo "Git clone"
       if [ ! -d "${APP_DIR}" ]; then
