@@ -54,7 +54,7 @@ write_files:
       Wants=network-online.target
 
       [Service]
-      Type=simple
+      Type=oneshot
       ExecStart=/usr/local/bin/product-tracker-setup.sh
       StandardOutput=journal
       StandardError=journal
