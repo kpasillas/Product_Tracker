@@ -55,7 +55,9 @@ write_files:
 
       [Service]
       Type=oneshot
-      ExecStart=/usr/local/bin/product-tracker-setup.sh
+      User=kpasillas
+      Environment=HOME=/home/kpasillas
+      ExecStart=/bin/bash -lc /usr/local/bin/product-tracker-setup.sh
       StandardOutput=journal
       StandardError=journal
 
@@ -76,14 +78,17 @@ write_files:
       HOME_DIR="/home/${USER}"
       APP_DIR="${HOME_DIR}/Product_Tracker"
       PYTHON="/usr/local/bin/python3.13"
+      
+      export PYENV_ROOT="$HOME/.pyenv"
+      export PATH="$PYENV_ROOT/bin:$PATH"
+      eval "$(pyenv init -)"
 
       echo "=== Product Tracker setup starting ==="
 
 
       echo "Build pyenv"
-      if [ ! -d "/root/.pyenv" ]; then
+      if [ ! -d "/.pyenv" ]; then
         echo "Build pyenv - Start"
-        export HOME="/root"
         curl -fsSL https://pyenv.run | bash
         
         echo "Build pyenv - set variables"
