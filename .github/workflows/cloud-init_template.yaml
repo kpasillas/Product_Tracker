@@ -115,10 +115,10 @@ write_files:
         sudo -u "${USER}" git clone https://github.com/kpasillas/Product_Tracker.git "${APP_DIR}"
         echo "Git Clone - Finish"
 
-        echo "Setup env - Start"
-        cd ${HOME_DIR}
-        mv .env ${APP_DIR}
-        echo "Setup env - Finish"
+        # echo "Setup env - Start"
+        # cd ${HOME_DIR}
+        # mv .env ${APP_DIR}
+        # echo "Setup env - Finish"
 
         echo "Setup venv - Start"
         cd ${APP_DIR}
@@ -131,9 +131,9 @@ write_files:
         pip install -r requirements.txt
         echo "Setup venv - Finish"
 
-        echo "run_product_tracker.py - Start"
-        python run_product_tracker.py
-        echo "run_product_tracker.py - Finish"
+        # echo "run_product_tracker.py - Start"
+        # python run_product_tracker.py
+        # echo "run_product_tracker.py - Finish"
       fi
 
       echo "=== Product Tracker setup complete ==="
