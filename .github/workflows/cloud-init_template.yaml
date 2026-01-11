@@ -86,6 +86,7 @@ write_files:
 
       echo "=== Product Tracker setup starting ==="
 
+      echo $(whoami)
 
       echo "Build pyenv"
       if [ ! -d "$PYENV_ROOT" ]; then
@@ -126,6 +127,17 @@ write_files:
         echo "Git Clone - Start"
         sudo -u "${USER}" git clone https://github.com/kpasillas/Product_Tracker.git "${APP_DIR}"
         echo "Git Clone - Finish"
+
+        echo "Setup venv - Start"
+        cd ${APP_DIR}
+        echo "Create venv"
+        python -m venv .venv
+        echo "Activate venv"
+        source .venv/bin/activate
+        echo "Install pip packages"
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        echo "Setup venv - Finish"
       fi
 
       echo "Set venv"
