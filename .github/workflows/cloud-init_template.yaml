@@ -64,6 +64,13 @@ write_files:
       [Install]
       WantedBy=multi-user.target
 
+  - path: /home/kpasillas/.env
+    permissions: "0644"
+    content: |
+      MYSQL_USERNAME='MYSQL_USERNAME'
+      MYSQL_PASSWORD='MYSQL_PASSWORD'
+      MYSQL_HOST='MYSQL_HOST'
+
 ############################
 # 4. APP SETUP SCRIPT
 ############################
@@ -86,63 +93,43 @@ write_files:
 
       echo "=== Product Tracker setup starting ==="
 
-      echo $(whoami)
+      # echo "Build pyenv"
+      # if [ ! -d "$PYENV_ROOT" ]; then
+      #   echo "Build pyenv - Start"
+      #   curl -fsSL https://pyenv.run | bash
 
-      echo "Build pyenv"
-      if [ ! -d "$PYENV_ROOT" ]; then
-        echo "Build pyenv - Start"
-        curl -fsSL https://pyenv.run | bash
-        
-        # echo "Build pyenv - set variables"
-        # echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
-        # echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
-        # echo 'eval "$(pyenv init --path)"' >> ~/.bashrc
-        # echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.profile
-        # echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.profile
-        # echo 'eval "$(pyenv init --path)"' >> ~/.profile
-
-        echo "Build Python - Start"
-        pyenv install 3.13.5
-        pyenv global 3.13.5
-        echo $(python --version)
-        echo "Build Python - Finish"
-        
-        echo "Build pyenv - exit"
-        exit
-        echo "Build pyenv - Finish"
-      fi
-
-
-      # echo "Build Python 3.13.5"
-      # if [[ ! "$(python3.13 --version 2>&1)" =~ "Python 3.13" ]]; then
       #   echo "Build Python - Start"
-      #   /root/.pyenv/bin/pyenv install 3.13.5
-      #   /root/.pyenv/bin/pyenv global 3.13.5
+      #   pyenv install 3.13.5
+      #   pyenv global 3.13.5
       #   echo $(python --version)
       #   echo "Build Python - Finish"
+        
+      #   echo "Build pyenv - exit"
+      #   exit
+      #   echo "Build pyenv - Finish"
       # fi
 
-      echo "Git clone"
-      if [ ! -d "${APP_DIR}" ]; then
-        echo "Git Clone - Start"
-        sudo -u "${USER}" git clone https://github.com/kpasillas/Product_Tracker.git "${APP_DIR}"
-        echo "Git Clone - Finish"
+      # echo "Git clone"
+      # if [ ! -d "${APP_DIR}" ]; then
+      #   echo "Git Clone - Start"
+      #   sudo -u "${USER}" git clone https://github.com/kpasillas/Product_Tracker.git "${APP_DIR}"
+      #   echo "Git Clone - Finish"
 
-        echo "Setup venv - Start"
-        cd ${APP_DIR}
-        echo "Create venv"
-        python -m venv .venv
-        echo "Activate venv"
-        source .venv/bin/activate
-        echo "Install pip packages"
-        pip install --upgrade pip
-        pip install -r requirements.txt
-        echo "Setup venv - Finish"
+      #   echo "Setup venv - Start"
+      #   cd ${APP_DIR}
+      #   echo "Create venv"
+      #   python -m venv .venv
+      #   echo "Activate venv"
+      #   source .venv/bin/activate
+      #   echo "Install pip packages"
+      #   pip install --upgrade pip
+      #   pip install -r requirements.txt
+      #   echo "Setup venv - Finish"
 
-        echo "run_product_tracker.py - Start"
-        python run_product_tracker.py
-        echo "run_product_tracker.py - Finish"
-      fi
+      #   echo "run_product_tracker.py - Start"
+      #   python run_product_tracker.py
+      #   echo "run_product_tracker.py - Finish"
+      # fi
 
       echo "=== Product Tracker setup complete ==="
 
@@ -167,8 +154,4 @@ runcmd:
       echo "Reboot required, rebooting..."
       reboot
       echo "Reboot required - Finish"
-    # else
-    #   echo "product-tracker.server - Start"
-    #   systemctl start product-tracker.service
-    #   echo "product-tracker.server - Finish"
     fi
