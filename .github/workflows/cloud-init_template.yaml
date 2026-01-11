@@ -138,24 +138,11 @@ write_files:
         pip install --upgrade pip
         pip install -r requirements.txt
         echo "Setup venv - Finish"
+
+        echo "run_product_tracker.py - Start"
+        python run_product_tracker.py
+        echo "run_product_tracker.py - Finish"
       fi
-
-      echo "Set venv"
-      sudo -u "${USER}" bash -lc "
-        echo "Setup venv - Start"
-        cd ${APP_DIR}
-        echo "Create venv"
-        python -m venv .venv
-        echo "Activate venv"
-        source .venv/bin/activate
-        echo "Install pip packages"
-        pip install --upgrade pip
-        pip install -r requirements.txt
-        echo "Setup venv - Finish"
-      "
-
-      # systemctl daemon-reload
-      # systemctl enable product-tracker.service
 
       echo "=== Product Tracker setup complete ==="
 
