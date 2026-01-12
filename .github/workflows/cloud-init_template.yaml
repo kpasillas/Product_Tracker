@@ -115,33 +115,33 @@ write_files:
         echo "Build pyenv - Finish"
       fi
 
-      echo "Git clone"
-      if [ ! -d "${APP_DIR}" ]; then
-        echo "Git Clone - Start"
-        sudo -u "${USER}" git clone https://github.com/kpasillas/Product_Tracker.git "${APP_DIR}"
-        echo "Git Clone - Finish"
+      # echo "Git clone"
+      # if [ ! -d "${APP_DIR}" ]; then
+      #   echo "Git Clone - Start"
+      #   sudo -u "${USER}" git clone https://github.com/kpasillas/Product_Tracker.git "${APP_DIR}"
+      #   echo "Git Clone - Finish"
 
-        # echo "Setup env - Start"
-        # cd "${HOME_DIR}"
-        # echo $(ls -lah)
-        # mv /.env ${APP_DIR}
-        # echo "Setup env - Finish"
+      #   # echo "Setup env - Start"
+      #   # cd "${HOME_DIR}"
+      #   # echo $(ls -lah)
+      #   # mv /.env ${APP_DIR}
+      #   # echo "Setup env - Finish"
 
-        echo "Setup venv - Start"
-        cd ${APP_DIR}
-        echo "Create venv"
-        python -m venv .venv
-        echo "Activate venv"
-        source .venv/bin/activate
-        echo "Install pip packages"
-        pip install --upgrade pip
-        pip install -r requirements.txt
-        echo "Setup venv - Finish"
+      #   echo "Setup venv - Start"
+      #   cd ${APP_DIR}
+      #   echo "Create venv"
+      #   python -m venv .venv
+      #   echo "Activate venv"
+      #   source .venv/bin/activate
+      #   echo "Install pip packages"
+      #   pip install --upgrade pip
+      #   pip install -r requirements.txt
+      #   echo "Setup venv - Finish"
 
-        # echo "run_product_tracker.py - Start"
-        # python run_product_tracker.py
-        # echo "run_product_tracker.py - Finish"
-      fi
+      #   # echo "run_product_tracker.py - Start"
+      #   # python run_product_tracker.py
+      #   # echo "run_product_tracker.py - Finish"
+      # fi
 
       # ---- Setup marker ----
       touch "$HOME_DIR/.product_tracker_setup_done"
@@ -164,10 +164,10 @@ runcmd:
   - systemctl start product-tracker.service
   - echo "product-tracker.service - Finish"
   
-  # - |
-  #   if [ -f /var/run/reboot-required ]; then
-  #     echo "Reboot required - Start"
-  #     echo "Reboot required, rebooting..."
-  #     reboot
-  #     echo "Reboot required - Finish"
-  #   fi
+  - |
+    if [ -f /var/run/reboot-required ]; then
+      echo "Reboot required - Start"
+      echo "Reboot required, rebooting..."
+      reboot
+      echo "Reboot required - Finish"
+    fi
