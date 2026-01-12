@@ -148,22 +148,25 @@ write_files:
 # 5. EXECUTION + REBOOT LOGIC
 ############################
 
-runcmd:
+# runcmd:
+  - mkdir -p /home/kpasillas/Product_Tracker
+  - chown -R kpasillas:kpasillas /home/kpasillas
+  
   # - echo "product-tracker-setup - Start"
   # - /usr/local/bin/product-tracker-setup.sh
   # - echo "product-tracker-setup - Finish"
 
-  - echo "product-tracker.service - Start"
-  - systemctl daemon-reload
-  - sudo -u kpasillas /usr/local/bin/product-tracker-setup.sh
-  - systemctl enable product-tracker.service
-  - systemctl start product-tracker.service
-  - echo "product-tracker.service - Finish"
+  # - echo "product-tracker.service - Start"
+  # - systemctl daemon-reload
+  # - sudo -u kpasillas /usr/local/bin/product-tracker-setup.sh
+  # - systemctl enable product-tracker.service
+  # - systemctl start product-tracker.service
+  # - echo "product-tracker.service - Finish"
   
-  - |
-    if [ -f /var/run/reboot-required ]; then
-      echo "Reboot required - Start"
-      echo "Reboot required, rebooting..."
-      reboot
-      echo "Reboot required - Finish"
-    fi
+  # - |
+  #   if [ -f /var/run/reboot-required ]; then
+  #     echo "Reboot required - Start"
+  #     echo "Reboot required, rebooting..."
+  #     reboot
+  #     echo "Reboot required - Finish"
+  #   fi
