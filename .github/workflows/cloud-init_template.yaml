@@ -44,6 +44,10 @@ users:
 # 3. SYSTEMD SERVICE
 ############################
 
+runcmd:
+  - mkdir -p /home/kpasillas/Product_Tracker
+  - chown -R kpasillas:kpasillas /home/kpasillas
+
 write_files:
   - path: /etc/systemd/system/product-tracker.service
     permissions: "0644"
@@ -145,9 +149,6 @@ write_files:
 ############################
 
 runcmd:
-  - mkdir -p /home/kpasillas/Product_Tracker
-  - chown -R kpasillas:kpasillas /home/kpasillas
-  
   # - echo "product-tracker-setup - Start"
   # - /usr/local/bin/product-tracker-setup.sh
   # - echo "product-tracker-setup - Finish"
