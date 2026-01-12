@@ -149,8 +149,11 @@ write_files:
 ############################
 
 # runcmd:
-  - mkdir -p /home/kpasillas/Product_Tracker
-  - chown -R kpasillas:kpasillas /home/kpasillas
+  - |
+    if [ ! -d /home/kpasillas/Product_Tracker ]; then
+      mkdir -p /home/kpasillas/Product_Tracker
+      chown -R kpasillas:kpasillas /home/kpasillas
+    fi
   
   # - echo "product-tracker-setup - Start"
   # - /usr/local/bin/product-tracker-setup.sh
@@ -163,10 +166,10 @@ write_files:
   # - systemctl start product-tracker.service
   # - echo "product-tracker.service - Finish"
   
-  # - |
-  #   if [ -f /var/run/reboot-required ]; then
-  #     echo "Reboot required - Start"
-  #     echo "Reboot required, rebooting..."
-  #     reboot
-  #     echo "Reboot required - Finish"
-  #   fi
+  - |
+    if [ -f /var/run/reboot-required ]; then
+      echo "Reboot required - Start"
+      echo "Reboot required, rebooting..."
+      reboot
+      echo "Reboot required - Finish"
+    fi
