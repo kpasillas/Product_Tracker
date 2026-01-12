@@ -64,12 +64,12 @@ write_files:
       [Install]
       WantedBy=multi-user.target
 
-  - path: /home/kpasillas/.env
-    permissions: "0644"
-    content: |
-      MYSQL_USERNAME='MYSQL_USERNAME'
-      MYSQL_PASSWORD='MYSQL_PASSWORD'
-      MYSQL_HOST='MYSQL_HOST'
+  # - path: /home/kpasillas/.env
+  #   permissions: "0644"
+  #   content: |
+  #     MYSQL_USERNAME='MYSQL_USERNAME'
+  #     MYSQL_PASSWORD='MYSQL_PASSWORD'
+  #     MYSQL_HOST='MYSQL_HOST'
 
 ############################
 # 4. APP SETUP SCRIPT
