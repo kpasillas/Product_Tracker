@@ -118,7 +118,7 @@ write_files:
         echo "Setup env - Start"
         # cd "${HOME_DIR}"
         # echo $(ls -lah)
-        # mv /.env "${APP_DIR}"
+        mv /.env ${APP_DIR}
         echo "Setup env - Finish"
 
         echo "Setup venv - Start"
