@@ -44,24 +44,25 @@ users:
 # 3. SYSTEMD SERVICE
 ############################
 
-runcmd:
-  - mkdir -p /home/kpasillas/Product_Tracker
-  - chown -R kpasillas:kpasillas /home/kpasillas
-
 write_files:
   - path: /etc/systemd/system/product-tracker.service
     permissions: "0644"
     content: |
       [Unit]
-      Description=Run Product Tracker
+      Description=Product Tracker Application
       After=network-online.target
       Wants=network-online.target
 
       [Service]
-      Type=oneshot
+      Type=simple
       User=kpasillas
+      WorkingDirectory=/home/kpasillas/Product_Tracker
       Environment=HOME=/home/kpasillas
-      ExecStart=/bin/bash -lc /usr/local/bin/product-tracker-setup.sh
+      Environment=PYENV_ROOT=/home/kpasillas/.pyenv
+      Environment=PATH=/home/kpasillas/.pyenv/shims:/home/kpasillas/.pyenv/bin:/usr/bin:/bin
+      ExecStart=/home/kpasillas/Product_Tracker/.venv/bin/python run_product_tracker.py
+      Restart=on-failure
+      RestartSec=5
       StandardOutput=journal
       StandardError=journal
 
@@ -142,6 +143,9 @@ write_files:
         # echo "run_product_tracker.py - Finish"
       fi
 
+      # ---- Setup marker ----
+      touch "$HOME_DIR/.product_tracker_setup_done"
+
       echo "=== Product Tracker setup complete ==="
 
 ############################
@@ -153,11 +157,12 @@ runcmd:
   # - /usr/local/bin/product-tracker-setup.sh
   # - echo "product-tracker-setup - Finish"
 
-  # - echo "product-tracker.service - Start"
-  # - systemctl daemon-reload
-  # - systemctl enable product-tracker.service
-  # - systemctl start product-tracker.service
-  # - echo "product-tracker.service - Finish"
+  - echo "product-tracker.service - Start"
+  - systemctl daemon-reload
+  - sudo -u kpasillas /usr/local/bin/product-tracker-setup.sh
+  - systemctl enable product-tracker.service
+  - systemctl start product-tracker.service
+  - echo "product-tracker.service - Finish"
   
   # - |
   #   if [ -f /var/run/reboot-required ]; then
