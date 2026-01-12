@@ -77,10 +77,6 @@ write_files:
       MYSQL_PASSWORD='MYSQL_PASSWORD'
       MYSQL_HOST='MYSQL_HOST'
 
-############################
-# 4. APP SETUP SCRIPT
-############################
-
   - path: /usr/local/bin/product-tracker-setup.sh
     permissions: "0755"
     content: |
