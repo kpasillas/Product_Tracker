@@ -45,8 +45,7 @@ users:
 ############################
 
 write_files:
-  - path: /home/kpasillas/Product_Tracker/.env
-    owner: kpasillas:kpasillas
+  - path: /.env
     permissions: '0600'
     content: |
       MYSQL_USERNAME='MYSQL_USERNAME'
