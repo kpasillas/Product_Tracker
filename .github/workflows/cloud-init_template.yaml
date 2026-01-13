@@ -148,7 +148,7 @@ write_files:
 # 5. EXECUTION + REBOOT LOGIC
 ############################
 
-# runcmd:
+runcmd:
   - echo "runcmd - Start"
   - |
     if [ ! -d /home/kpasillas/Product_Tracker ]; then
