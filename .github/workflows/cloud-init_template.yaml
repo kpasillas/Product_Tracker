@@ -142,7 +142,7 @@ runcmd:
   - echo "runcmd - Start"
   
   - echo "product-tracker-setup - Start"
-  - /usr/local/bin/product-tracker-setup.sh
+  - sudo -u kpasillas /usr/local/bin/product-tracker-setup.sh
   - echo "product-tracker-setup - Finish"
 
   # - echo "product-tracker.service - Start"
