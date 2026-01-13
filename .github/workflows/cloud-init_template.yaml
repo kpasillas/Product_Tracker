@@ -145,10 +145,10 @@ runcmd:
   # - systemctl start product-tracker.service
   # - echo "product-tracker.service - Finish"
   
-  - |
-    if [ -f /var/run/reboot-required ]; then
-      echo "Reboot required - Start"
-      echo "Reboot required, rebooting..."
-      reboot
-      echo "Reboot required - Finish"
-    fi
+  # - |
+  #   if [ -f /var/run/reboot-required ]; then
+  #     echo "Reboot required - Start"
+  #     echo "Reboot required, rebooting..."
+  #     reboot
+  #     echo "Reboot required - Finish"
+  #   fi
