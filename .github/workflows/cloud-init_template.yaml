@@ -50,9 +50,9 @@ bootcmd:
     if [ ! -d /home/kpasillas/Product_Tracker ]; then
       echo "mkdir - Start"
       mkdir -p /home/kpasillas/Product_Tracker
-      chown -R kpasillas:kpasillas /home/kpasillas
       echo "mkdir - Finish"
     fi
+  - chown -R kpasillas:kpasillas /home/kpasillas
   - echo "bootcmd - Finish"
 
 ############################
