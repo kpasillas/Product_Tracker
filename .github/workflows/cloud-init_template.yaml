@@ -74,8 +74,8 @@ write_files:
       set -euo pipefail
 
       USER="kpasillas"
-      HOME_DIR="/home/${USER}"
-      APP_DIR="${HOME_DIR}/Product_Tracker"
+      HOME="/home/${USER}"
+      APP_DIR="${HOME}/Product_Tracker"
       PYTHON="/usr/local/bin/python3.13"
 
       export PYENV_ROOT="$HOME/.pyenv"
