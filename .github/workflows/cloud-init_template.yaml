@@ -44,6 +44,7 @@ users:
 # 3. SYSTEMD SERVICE
 ############################
 
+write_files:
   - path: /home/kpasillas/Product_Tracker/.env
     owner: kpasillas:kpasillas
     permissions: '0600'
