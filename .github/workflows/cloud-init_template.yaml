@@ -40,6 +40,10 @@ users:
     groups: sudo
     lock_passwd: true
 
+
+############################
+# bootcmd
+############################
 bootcmd:
   - echo "bootcmd - Start"
   - |
@@ -52,12 +56,12 @@ bootcmd:
   - echo "bootcmd - Finish"
 
 ############################
-# 3. SYSTEMD SERVICE
+# 3. write_files
 ############################
 
 write_files:
   - path: /home/kpasillas/Product_Tracker/.env
-    permissions: '0600'
+    permissions: "0600"
     content: |
       MYSQL_USERNAME='MYSQL_USERNAME'
       MYSQL_PASSWORD='MYSQL_PASSWORD'
@@ -126,7 +130,7 @@ write_files:
       fi
 
       # ---- Setup marker ----
-      # touch "$HOME_DIR/.product_tracker_setup_done"
+      touch "$HOME_DIR/.product_tracker_setup_done"
 
       echo "=== Product Tracker setup complete ==="
 
@@ -137,9 +141,9 @@ write_files:
 runcmd:
   - echo "runcmd - Start"
   
-  # - echo "product-tracker-setup - Start"
-  # - /usr/local/bin/product-tracker-setup.sh
-  # - echo "product-tracker-setup - Finish"
+  - echo "product-tracker-setup - Start"
+  - /usr/local/bin/product-tracker-setup.sh
+  - echo "product-tracker-setup - Finish"
 
   # - echo "product-tracker.service - Start"
   # - systemctl daemon-reload
@@ -148,12 +152,12 @@ runcmd:
   # - systemctl start product-tracker.service
   # - echo "product-tracker.service - Finish"
   
-  # - |
-  #   if [ -f /var/run/reboot-required ]; then
-  #     echo "Reboot required - Start"
-  #     echo "Reboot required, rebooting..."
-  #     reboot
-  #     echo "Reboot required - Finish"
-  #   fi
+  - |
+    if [ -f /var/run/reboot-required ]; then
+      echo "Reboot required - Start"
+      echo "Reboot required, rebooting..."
+      reboot
+      echo "Reboot required - Finish"
+    fi
 
   - echo "runcmd - Finish"
