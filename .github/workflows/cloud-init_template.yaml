@@ -44,31 +44,6 @@ users:
 # 3. SYSTEMD SERVICE
 ############################
 
-write_files:
-  - path: /etc/systemd/system/product-tracker.service
-    permissions: "0644"
-    content: |
-      [Unit]
-      Description=Product Tracker Application
-      After=network-online.target
-      Wants=network-online.target
-
-      [Service]
-      Type=simple
-      User=kpasillas
-      WorkingDirectory=/home/kpasillas/Product_Tracker
-      Environment=HOME=/home/kpasillas
-      Environment=PYENV_ROOT=/home/kpasillas/.pyenv
-      Environment=PATH=/home/kpasillas/.pyenv/shims:/home/kpasillas/.pyenv/bin:/usr/bin:/bin
-      ExecStart=/home/kpasillas/Product_Tracker/.venv/bin/python run_product_tracker.py
-      Restart=on-failure
-      RestartSec=5
-      StandardOutput=journal
-      StandardError=journal
-
-      [Install]
-      WantedBy=multi-user.target
-
   - path: /home/kpasillas/Product_Tracker/.env
     owner: kpasillas:kpasillas
     permissions: '0600'
