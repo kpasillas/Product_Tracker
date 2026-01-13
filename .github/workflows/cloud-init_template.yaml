@@ -40,12 +40,23 @@ users:
     groups: sudo
     lock_passwd: true
 
+bootcmd:
+  - echo "bootcmd - Start"
+  - |
+    if [ ! -d /home/kpasillas/Product_Tracker ]; then
+      echo "mkdir - Start"
+      mkdir -p /home/kpasillas/Product_Tracker
+      chown -R kpasillas:kpasillas /home/kpasillas
+      echo "mkdir - Finish"
+    fi
+  - echo "bootcmd - Finish"
+
 ############################
 # 3. SYSTEMD SERVICE
 ############################
 
 write_files:
-  - path: /.env
+  - path: /home/kpasillas/Product_Tracker/.env
     permissions: '0600'
     content: |
       MYSQL_USERNAME='MYSQL_USERNAME'
@@ -86,17 +97,17 @@ write_files:
         echo "Build pyenv - Finish"
       fi
 
-      # echo "Git clone"
-      # if [ ! -d "${APP_DIR}" ]; then
-      #   echo "Git Clone - Start"
-      #   sudo -u "${USER}" git clone https://github.com/kpasillas/Product_Tracker.git "${APP_DIR}"
-      #   echo "Git Clone - Finish"
+      echo "Git clone"
+      if [ ! -d "${APP_DIR}" ]; then
+        echo "Git Clone - Start"
+        sudo -u "${USER}" git clone https://github.com/kpasillas/Product_Tracker.git "${APP_DIR}"
+        echo "Git Clone - Finish"
 
-        # echo "Setup env - Start"
-        # cd "${HOME_DIR}"
-        # echo $(ls -lah)
-        # mv /.env ${APP_DIR}
-        # echo "Setup env - Finish"
+        echo "Setup env - Start"
+        cd "${HOME_DIR}"
+        echo $(ls -lah)
+        mv /.env ${APP_DIR}
+        echo "Setup env - Finish"
 
         echo "Setup venv - Start"
         cd ${APP_DIR}
@@ -112,7 +123,7 @@ write_files:
         # echo "run_product_tracker.py - Start"
         # python run_product_tracker.py
         # echo "run_product_tracker.py - Finish"
-      # fi
+      fi
 
       # ---- Setup marker ----
       # touch "$HOME_DIR/.product_tracker_setup_done"
@@ -125,13 +136,6 @@ write_files:
 
 runcmd:
   - echo "runcmd - Start"
-  # - |
-  #   if [ ! -d /home/kpasillas/Product_Tracker ]; then
-  #     echo "mkdir - Start"
-  #     mkdir -p /home/kpasillas/Product_Tracker
-  #     chown -R kpasillas:kpasillas /home/kpasillas
-  #     echo "mkdir - Finish"
-  #   fi
   
   # - echo "product-tracker-setup - Start"
   # - /usr/local/bin/product-tracker-setup.sh
@@ -151,3 +155,5 @@ runcmd:
   #     reboot
   #     echo "Reboot required - Finish"
   #   fi
+
+  - echo "runcmd - Finish"
