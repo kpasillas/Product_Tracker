@@ -52,7 +52,6 @@ bootcmd:
       mkdir -p /home/kpasillas/Product_Tracker
       echo "mkdir - Finish"
     fi
-  - chown -R kpasillas:kpasillas /home/kpasillas
   - echo "bootcmd - Finish"
 
 ############################
@@ -140,6 +139,8 @@ write_files:
 
 runcmd:
   - echo "runcmd - Start"
+
+  - chown -R kpasillas:kpasillas /home/kpasillas
   
   - echo "product-tracker-setup - Start"
   - sudo -u kpasillas /usr/local/bin/product-tracker-setup.sh
