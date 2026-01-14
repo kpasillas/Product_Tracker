@@ -59,6 +59,25 @@ bootcmd:
 ############################
 
 write_files:
+  - path: /etc/systemd/system/product-tracker.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      Description=Run Product Tracker
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=oneshot
+      User=kpasillas
+      Environment=HOME=/home/kpasillas
+      ExecStart=/bin/bash -lc /usr/local/bin/product-tracker-setup.sh
+      StandardOutput=journal
+      StandardError=journal
+
+      [Install]
+      WantedBy=multi-user.target
+  
   - path: /home/kpasillas/Product_Tracker/.env
     permissions: "0600"
     content: |
@@ -142,16 +161,16 @@ runcmd:
 
   - chown -R kpasillas:kpasillas /home/kpasillas
   
-  - echo "product-tracker-setup - Start"
-  - sudo -u kpasillas /usr/local/bin/product-tracker-setup.sh
-  - echo "product-tracker-setup - Finish"
-
-  # - echo "product-tracker.service - Start"
-  # - systemctl daemon-reload
+  # - echo "product-tracker-setup - Start"
   # - sudo -u kpasillas /usr/local/bin/product-tracker-setup.sh
-  # - systemctl enable product-tracker.service
-  # - systemctl start product-tracker.service
-  # - echo "product-tracker.service - Finish"
+  # - echo "product-tracker-setup - Finish"
+
+  - echo "product-tracker.service - Start"
+  - systemctl daemon-reload
+  - sudo -u kpasillas /usr/local/bin/product-tracker-setup.sh
+  - systemctl enable product-tracker.service
+  - systemctl start product-tracker.service
+  - echo "product-tracker.service - Finish"
   
   - |
     if [ -f /var/run/reboot-required ]; then
