@@ -78,13 +78,14 @@ write_files:
       APP_DIR="${HOME}/Product_Tracker"
       PYTHON="/usr/local/bin/python3.13"
 
+      export PYENV_ROOT="$HOME/.pyenv"
+      export PATH="$PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH"
+
       echo "=== Product Tracker setup starting ==="
 
       echo "Build pyenv"
       if [ ! -d "$PYENV_ROOT" ]; then
         echo "Build pyenv - Start"
-        export PYENV_ROOT="$HOME/.pyenv"
-        export PATH="$PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH"
         curl -fsSL https://pyenv.run | bash
         eval "$(pyenv init --path)"
         eval "$(pyenv init -)"
