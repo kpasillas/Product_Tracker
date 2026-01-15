@@ -40,20 +40,6 @@ users:
     groups: sudo
     lock_passwd: true
 
-
-############################
-# bootcmd
-############################
-bootcmd:
-  - echo "bootcmd - Start"
-  - |
-    if [ ! -d /home/kpasillas/Product_Tracker ]; then
-      echo "mkdir - Start"
-      mkdir -p /home/kpasillas/Product_Tracker
-      echo "mkdir - Finish"
-    fi
-  - echo "bootcmd - Finish"
-
 ############################
 # 3. write_files
 ############################
@@ -78,7 +64,7 @@ write_files:
       [Install]
       WantedBy=multi-user.target
   
-  - path: /home/kpasillas/Product_Tracker/.env
+  - path: /home/kpasillas/.env
     permissions: "0600"
     content: |
       MYSQL_USERNAME='MYSQL_USERNAME'
@@ -124,6 +110,8 @@ write_files:
       echo "Git Clone - Start"
       sudo -u "${USER}" git clone https://github.com/kpasillas/Product_Tracker.git "${APP_DIR}"
       echo "Git Clone - Finish"
+
+      mv ${HOME}/.env ${APP_DIR}
 
         # echo "Setup env - Start"
         # cd "${HOME_DIR}"
