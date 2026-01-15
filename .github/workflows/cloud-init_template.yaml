@@ -67,9 +67,9 @@ write_files:
   - path: /home/kpasillas/.env
     permissions: "0600"
     content: |
-      MYSQL_USERNAME='MYSQL_USERNAME'
-      MYSQL_PASSWORD='MYSQL_PASSWORD'
-      MYSQL_HOST='MYSQL_HOST'
+      MYSQL_USERNAME="${MYSQL_USERNAME}"
+      MYSQL_PASSWORD="${MYSQL_PASSWORD}"
+      MYSQL_HOST="${MYSQL_HOST}"
 
   - path: /usr/local/bin/product-tracker-setup.sh
     permissions: "0755"
