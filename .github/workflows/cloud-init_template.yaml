@@ -106,34 +106,28 @@ write_files:
       fi
 
       echo "Git clone"
-      # if [ ! -d "${APP_DIR}" ]; then
-      echo "Git Clone - Start"
-      sudo -u "${USER}" git clone https://github.com/kpasillas/Product_Tracker.git "${APP_DIR}"
-      echo "Git Clone - Finish"
+      if [ ! -d "${APP_DIR}" ]; then
+        echo "Git Clone - Start"
+        sudo -u "${USER}" git clone https://github.com/kpasillas/Product_Tracker.git "${APP_DIR}"
+        echo "Git Clone - Finish"
 
-      mv ${HOME}/.env ${APP_DIR}
+        mv ${HOME}/.env ${APP_DIR}
 
-        # echo "Setup env - Start"
-        # cd "${HOME_DIR}"
-        # echo $(ls -lah)
-        # mv /.env ${APP_DIR}
-        # echo "Setup env - Finish"
-
-      echo "Setup venv - Start"
-      cd ${APP_DIR}
-      echo "Create venv"
-      python -m venv .venv
-      echo "Activate venv"
-      source .venv/bin/activate
-      echo "Install pip packages"
-      pip install --upgrade pip
-      pip install -r requirements.txt
-      echo "Setup venv - Finish"
+        echo "Setup venv - Start"
+        cd ${APP_DIR}
+        echo "Create venv"
+        python -m venv .venv
+        echo "Activate venv"
+        source .venv/bin/activate
+        echo "Install pip packages"
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        echo "Setup venv - Finish"
 
         # echo "run_product_tracker.py - Start"
         # python run_product_tracker.py
         # echo "run_product_tracker.py - Finish"
-      # fi
+      fi
 
       # ---- Setup marker ----
       touch "$HOME/.product_tracker_setup_done"
@@ -149,10 +143,6 @@ runcmd:
 
   - chown -R kpasillas:kpasillas /home/kpasillas
   
-  # - echo "product-tracker-setup - Start"
-  # - sudo -u kpasillas /usr/local/bin/product-tracker-setup.sh
-  # - echo "product-tracker-setup - Finish"
-
   - echo "product-tracker.service - Start"
   - systemctl daemon-reload
   - sudo -u kpasillas /usr/local/bin/product-tracker-setup.sh
