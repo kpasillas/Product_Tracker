@@ -12,12 +12,12 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Render cloud-init
-        run: |
-          envsubst < .github/workflows/cloud-init_template.yaml > .github/workflows/cloud-init.yaml
         env:
           MYSQL_USERNAME: ${{ secrets.MYSQL_USERNAME }}
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
           MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+        run: |
+          envsubst < .github/workflows/cloud-init_template.yaml > .github/workflows/cloud-init.yaml
       
       - name: Install Linode CLI
         uses: linode/action-linode-cli@v1.1.0
