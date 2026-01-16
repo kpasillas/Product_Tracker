@@ -13,7 +13,7 @@ jobs:
       
       - name: Render cloud-init
         run: |
-          envsubst < cloud-init_template.yaml > cloud-init.yaml
+          envsubst < /.github/workflows/cloud-init_template.yaml > /.github/workflows/cloud-init.yaml
         env:
           MYSQL_USERNAME: ${{ secrets.MYSQL_USERNAME }}
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
