@@ -11,6 +11,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Render cloud-init
+        run: |
+          envsubst < cloud-init_template.yaml > cloud-init.yaml
+        env:
+          MYSQL_USERNAME: ${{ secrets.MYSQL_USERNAME }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+      
       - name: Install Linode CLI
         uses: linode/action-linode-cli@v1.1.0
         with:
@@ -24,4 +32,4 @@ jobs:
             --region "us-lax" \
             --type "g6-nanode-1" \
             --label "product_tracker" \
-            --metadata.user_data "$(cat .github/workflows/cloud-init_template.yaml | base64 -w 0)"
+            --metadata.user_data "$(cat .github/workflows/cloud-init.yaml | base64 -w 0)"
