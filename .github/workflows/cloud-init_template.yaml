@@ -45,25 +45,6 @@ users:
 ############################
 
 write_files:
-  - path: /etc/systemd/system/product-tracker.service
-    permissions: "0644"
-    content: |
-      [Unit]
-      Description=Run Product Tracker
-      After=network-online.target
-      Wants=network-online.target
-
-      [Service]
-      Type=oneshot
-      User=kpasillas
-      Environment=HOME=/home/kpasillas
-      ExecStart=/bin/bash -lc /usr/local/bin/product-tracker-setup.sh
-      StandardOutput=journal
-      StandardError=journal
-
-      [Install]
-      WantedBy=multi-user.target
-  
   - path: /home/kpasillas/.env
     permissions: "0600"
     content: |
@@ -88,46 +69,34 @@ write_files:
       echo "=== Product Tracker setup starting ==="
 
       echo "Build pyenv"
-      if [ ! -d "$PYENV_ROOT" ]; then
-        echo "Build pyenv - Start"
-        curl -fsSL https://pyenv.run | bash
-        eval "$(pyenv init --path)"
-        eval "$(pyenv init -)"
+      echo "Build pyenv - Start"
+      curl -fsSL https://pyenv.run | bash
+      eval "$(pyenv init --path)"
+      eval "$(pyenv init -)"
+      echo "Build pyenv - Finish"
 
-        echo "Build Python - Start"
-        pyenv install 3.13.5
-        pyenv global 3.13.5
-        echo $(python --version)
-        echo "Build Python - Finish"
-        
-        echo "Build pyenv - exit"
-        exit
-        echo "Build pyenv - Finish"
-      fi
+      echo "Build Python - Start"
+      pyenv install 3.13.5
+      pyenv global 3.13.5
+      echo $(python --version)
+      echo "Build Python - Finish"
 
-      echo "Git clone"
-      if [ ! -d "${APP_DIR}" ]; then
-        echo "Git Clone - Start"
-        sudo -u "${USER}" git clone https://github.com/kpasillas/Product_Tracker.git "${APP_DIR}"
-        echo "Git Clone - Finish"
+      echo "Git Clone - Start"
+      sudo -u "${USER}" git clone https://github.com/kpasillas/Product_Tracker.git "${APP_DIR}"
+      echo "Git Clone - Finish"
 
-        mv ${HOME}/.env ${APP_DIR}
+      mv ${HOME}/.env ${APP_DIR}
 
-        echo "Setup venv - Start"
-        cd ${APP_DIR}
-        echo "Create venv"
-        python -m venv .venv
-        echo "Activate venv"
-        source .venv/bin/activate
-        echo "Install pip packages"
-        pip install --upgrade pip
-        pip install -r requirements.txt
-        echo "Setup venv - Finish"
-
-        # echo "run_product_tracker.py - Start"
-        # python run_product_tracker.py
-        # echo "run_product_tracker.py - Finish"
-      fi
+      echo "Setup venv - Start"
+      cd ${APP_DIR}
+      echo "Create venv"
+      python -m venv .venv
+      echo "Activate venv"
+      source .venv/bin/activate
+      echo "Install pip packages"
+      pip install --upgrade pip
+      pip install -r requirements.txt
+      echo "Setup venv - Finish"
 
       # ---- Setup marker ----
       touch "$HOME/.product_tracker_setup_done"
@@ -144,18 +113,10 @@ runcmd:
   - chown -R kpasillas:kpasillas /home/kpasillas
   
   - echo "product-tracker.service - Start"
-  - systemctl daemon-reload
+  # - systemctl daemon-reload
   - sudo -u kpasillas /usr/local/bin/product-tracker-setup.sh
-  - systemctl enable product-tracker.service
-  - systemctl start product-tracker.service
+  # - systemctl enable product-tracker.service
+  # - systemctl start product-tracker.service
   - echo "product-tracker.service - Finish"
-  
-  - |
-    if [ -f /var/run/reboot-required ]; then
-      echo "Reboot required - Start"
-      echo "Reboot required, rebooting..."
-      reboot
-      echo "Reboot required - Finish"
-    fi
 
   - echo "runcmd - Finish"
