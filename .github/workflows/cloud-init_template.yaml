@@ -52,7 +52,7 @@ write_files:
       MYSQL_PASSWORD="${MYSQL_PASSWORD}"
       MYSQL_HOST="${MYSQL_HOST}"
 
-  - path: /usr/local/bin/product-tracker-setup.sh
+  - path: /usr/local/bin/setup-product-tracker.sh
     permissions: "0755"
     content: |
       #!/usr/bin/env bash
@@ -65,13 +65,12 @@ write_files:
       export PYENV_ROOT="$HOME/.pyenv"
       export PATH="$PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH"
 
-      echo "=== Product Tracker setup starting ==="
+      echo "=== Setup Product Tracker Starting ==="
 
       if [[ "$HOME" != "/home/kpasillas" ]]; then
         echo "ERROR: Incorrect HOME detected: $HOME"
         exit 1
       fi
-
 
       echo "Build pyenv - Start"
       curl -fsSL https://pyenv.run | bash
@@ -102,15 +101,15 @@ write_files:
       echo "Setup venv - Finish"
 
       # ---- Setup marker ----
-      touch "$HOME/.product_tracker_setup_done"
+      touch "$HOME/.setup_product_tracker_done"
 
-      echo "=== Product Tracker setup complete ==="
+      echo "=== Setup Product Tracker Complete ==="
 
-  - path: /etc/systemd/system/product-tracker.service
+  - path: /etc/systemd/system/setup-product-tracker.service
     permissions: "0644"
     content: |
       [Unit]
-      Description=Product Tracker Setup
+      Description=Setup Product Tracker
       After=network-online.target
       Wants=network-online.target
 
@@ -118,7 +117,7 @@ write_files:
       Type=oneshot
       User=kpasillas
       Environment=HOME=/home/kpasillas
-      ExecStart=/bin/bash -lc /usr/local/bin/product-tracker-setup.sh
+      ExecStart=/bin/bash -lc /usr/local/bin/setup-product-tracker.sh
 
       [Install]
       WantedBy=multi-user.target
@@ -141,7 +140,7 @@ write_files:
       exec python run_product_tracker.py
 
   
-  - path: /etc/systemd/system/product-tracker-run.service
+  - path: /etc/systemd/system/run-product-tracker.service
     permissions: "0644"
     content: |
       [Unit]
@@ -153,9 +152,12 @@ write_files:
       Type=oneshot
       User=kpasillas
       Environment=HOME=/home/kpasillas
+      Environment=XDG_RUNTIME_DIR=/run/user/1000
       ExecStart=/usr/local/bin/run-product-tracker.sh
       StandardOutput=journal
       StandardError=journal
+      PrivateTmp=false
+      ProtectHome=false
       
       [Install]
       WantedBy=multi-user.target
@@ -177,11 +179,11 @@ runcmd:
   
   - systemctl daemon-reload
   
-  - systemctl enable product-tracker.service
-  - systemctl start product-tracker.service
+  - systemctl enable setup-product-tracker.service
+  - systemctl start setup-product-tracker.service
 
-  - systemctl enable product-tracker-run.service
-  - systemctl start product-tracker-run.service
+  - systemctl enable run-product-tracker.service
+  - systemctl start run-product-tracker.service
   
   - echo "product-tracker.service - Finish"
 
