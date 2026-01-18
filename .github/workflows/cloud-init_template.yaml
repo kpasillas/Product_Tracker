@@ -67,10 +67,6 @@ write_files:
 
       echo "=== Product Tracker setup starting ==="
 
-      echo \$HOME
-      echo \$(HOME)
-      echo \${HOME}
-
       if [[ "\$HOME" != "/home/kpasillas" ]]; then
         echo "ERROR: Incorrect HOME detected: \$HOME"
         exit 1
