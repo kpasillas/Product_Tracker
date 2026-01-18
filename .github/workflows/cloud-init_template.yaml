@@ -119,7 +119,6 @@ write_files:
       User=kpasillas
       Environment=HOME=/home/kpasillas
       ExecStart=/bin/bash -lc /usr/local/bin/product-tracker-setup.sh
-      ExecStart=/bin/bash -lc /home/kpasillas/bin/product-tracker-setup.sh
 
       [Install]
       WantedBy=multi-user.target
