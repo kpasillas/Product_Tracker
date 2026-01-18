@@ -68,7 +68,11 @@ write_files:
 
       echo "=== Product Tracker setup starting ==="
 
-      echo $whoami
+      if [[ "$HOME" != "/home/kpasillas" ]]; then
+        echo "ERROR: Incorrect HOME detected: $HOME"
+        exit 1
+      fi
+
 
       echo "Build pyenv - Start"
       curl -fsSL https://pyenv.run | bash
@@ -104,6 +108,23 @@ write_files:
 
       echo "=== Product Tracker setup complete ==="
 
+  - path: /etc/systemd/system/product-tracker.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      Description=Product Tracker Setup
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=oneshot
+      User=kpasillas
+      Environment=HOME=/home/kpasillas
+      ExecStart=/bin/bash -lc /usr/local/bin/product-tracker-setup.sh
+
+      [Install]
+      WantedBy=multi-user.target
+
 ############################
 # 5. EXECUTION + REBOOT LOGIC
 ############################
@@ -114,10 +135,9 @@ runcmd:
   - chown -R kpasillas:kpasillas /home/kpasillas
   
   - echo "product-tracker.service - Start"
-  # - systemctl daemon-reload
-  - sudo -u kpasillas /usr/local/bin/product-tracker-setup.sh
-  # - systemctl enable product-tracker.service
-  # - systemctl start product-tracker.service
+  - systemctl daemon-reload
+  - systemctl enable product-tracker.service
+  - systemctl start product-tracker.service
   - echo "product-tracker.service - Finish"
 
   - echo "runcmd - Finish"
