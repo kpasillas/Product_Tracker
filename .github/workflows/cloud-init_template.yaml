@@ -82,7 +82,6 @@ write_files:
       echo "Build Python - Start"
       pyenv install 3.13.5
       pyenv global 3.13.5
-      echo $(python --version)
       echo "Build Python - Finish"
 
       echo "Git Clone - Start"
@@ -120,9 +119,48 @@ write_files:
       User=kpasillas
       Environment=HOME=/home/kpasillas
       ExecStart=/bin/bash -lc /usr/local/bin/product-tracker-setup.sh
+      ExecStart=/bin/bash -lc /home/kpasillas/bin/product-tracker-setup.sh
 
       [Install]
       WantedBy=multi-user.target
+
+   - path: /usr/local/bin/run-product-tracker.sh
+    permissions: "0755"
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+      
+      USER="kpasillas"
+      HOME="/home/${USER}"
+      APP_DIR="${HOME}/Product_Tracker"
+      
+      export HOME
+      cd "${APP_DIR}"
+      
+      source .venv/bin/activate
+      
+      exec python run_product_tracker.py
+
+  
+  - path: /etc/systemd/system/product-tracker-run.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      Description=Run Product Tracker
+      After=network-online.target
+      Wants=network-online.target
+      
+      [Service]
+      Type=oneshot
+      User=kpasillas
+      Environment=HOME=/home/kpasillas
+      ExecStart=/usr/local/bin/run-product-tracker.sh
+      StandardOutput=journal
+      StandardError=journal
+      
+      [Install]
+      WantedBy=multi-user.target
+
 
 ############################
 # 5. EXECUTION + REBOOT LOGIC
@@ -132,11 +170,20 @@ runcmd:
   - echo "runcmd - Start"
 
   - chown -R kpasillas:kpasillas /home/kpasillas
+  - chmod 0755 /usr/local/bin/run-product-tracker.sh
+  - chown root:root /usr/local/bin/run-product-tracker.sh
+
   
   - echo "product-tracker.service - Start"
+  
   - systemctl daemon-reload
+  
   - systemctl enable product-tracker.service
   - systemctl start product-tracker.service
+
+  - systemctl enable product-tracker-run.service
+  - systemctl start product-tracker-run.service
+  
   - echo "product-tracker.service - Finish"
 
   - echo "runcmd - Finish"
