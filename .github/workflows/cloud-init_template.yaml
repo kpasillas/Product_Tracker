@@ -68,7 +68,8 @@ write_files:
 
       echo "=== Product Tracker setup starting ==="
 
-      echo "Build pyenv"
+      echo $whoami
+
       echo "Build pyenv - Start"
       curl -fsSL https://pyenv.run | bash
       eval "$(pyenv init --path)"
