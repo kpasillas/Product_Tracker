@@ -124,7 +124,7 @@ write_files:
       [Install]
       WantedBy=multi-user.target
 
-   - path: /usr/local/bin/run-product-tracker.sh
+  - path: /usr/local/bin/run-product-tracker.sh
     permissions: "0755"
     content: |
       #!/usr/bin/env bash
