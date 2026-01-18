@@ -18,8 +18,8 @@ jobs:
           MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
         run: |
           envsubst '${MYSQL_USERNAME} ${MYSQL_PASSWORD} ${MYSQL_HOST}' \
-            < cloud-init_template.yaml \
-            > cloud-init.yaml
+            < .github/workflows/cloud-init_template.yaml \
+            > .github/workflows/cloud-init.yaml
       
       - name: Install Linode CLI
         uses: linode/action-linode-cli@v1.1.0
