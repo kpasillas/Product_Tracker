@@ -152,7 +152,9 @@ write_files:
       Type=oneshot
       User=kpasillas
       Environment=HOME=/home/kpasillas
-      Environment=XDG_RUNTIME_DIR=/run/user/1000
+      RuntimeDirectory=product-tracker
+      RuntimeDirectoryMode=0700
+      Environment=XDG_RUNTIME_DIR=/run/product-tracker
       ExecStart=/usr/local/bin/run-product-tracker.sh
       StandardOutput=journal
       StandardError=journal
