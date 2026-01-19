@@ -13,8 +13,8 @@ packages:
   - curl
   - build-essential
   - ca-certificates
-  - chromium
-  - chromium-chromedriver
+  - chromium-browser
+  - chromium-driver
   - libssl-dev
   - zlib1g-dev
   - libbz2-dev
