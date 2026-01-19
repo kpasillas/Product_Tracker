@@ -25,6 +25,8 @@ packages:
   - libxmlsec1-dev
   - libffi-dev
   - liblzma-dev
+  - google-chrome-stable
+  - chromium-chromedriver
 
 ############################
 # Users
@@ -70,17 +72,6 @@ write_files:
         exit 1
       fi
 
-      echo "Build Chrome - Start"
-      wget -qO - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
-
-      echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" \
-        > /etc/apt/sources.list.d/google-chrome.list
-      
-      apt update
-      apt install -y google-chrome-stable
-      apt install -y chromium-chromedriver
-      echo "Build Chrome - Finish"
-      
       echo "Build pyenv - Start"
       curl -fsSL https://pyenv.run | bash
       eval "$(pyenv init --path)"
