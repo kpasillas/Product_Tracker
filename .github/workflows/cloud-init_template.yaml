@@ -14,7 +14,7 @@ packages:
   - build-essential
   - ca-certificates
   - chromium-browser
-  - chromium-driver
+  - chromium-chromedriver
   - libssl-dev
   - zlib1g-dev
   - libbz2-dev
