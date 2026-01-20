@@ -104,12 +104,9 @@ jobs:
       - name: Destroy Linode
         if: success()
         env:
-          LINODE_TOKEN: ${{ secrets.LINODE_TOKEN }}
           LINODE_ID: ${{ steps.create.outputs.linode_id }}
         run: |
-          curl -sS -X DELETE \
-            -H "Authorization: Bearer $LINODE_TOKEN" \
-            https://api.linode.com/v4/linode/instances/$LINODE_ID
+          linode-cli linodes delete $LINODE_ID
 
       # --------------------------------------------------
       # 8. Failsafe cleanup (ALWAYS)
@@ -117,10 +114,6 @@ jobs:
       - name: Destroy Linode (failsafe)
         if: always()
         env:
-          LINODE_TOKEN: ${{ secrets.LINODE_TOKEN }}
           LINODE_ID: ${{ steps.create.outputs.linode_id }}
         run: |
-          [ -z "$LINODE_ID" ] && exit 0
-          curl -sS -X DELETE \
-            -H "Authorization: Bearer $LINODE_TOKEN" \
-            https://api.linode.com/v4/linode/instances/$LINODE_ID || true
+          linode-cli linodes delete $LINODE_ID
