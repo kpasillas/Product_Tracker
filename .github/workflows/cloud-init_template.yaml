@@ -109,6 +109,9 @@ write_files:
       # ---- Setup marker ----
       touch "$HOME/.setup_product_tracker_done"
 
+      systemctl set-property run-product-tracker.service \
+        ExecMainStatus=0
+
       echo "=== Setup Product Tracker Complete ==="
 
   - path: /etc/systemd/system/setup-product-tracker.service
@@ -144,9 +147,6 @@ write_files:
       source .venv/bin/activate
       
       exec python run_product_tracker.py
-
-      systemctl set-property run-product-tracker.service \
-        ExecMainStatus=0
 
   - path: /etc/systemd/system/run-product-tracker.service
     permissions: "0644"
