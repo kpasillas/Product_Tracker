@@ -109,8 +109,9 @@ write_files:
       # ---- Setup marker ----
       touch "$HOME/.setup_product_tracker_done"
 
-      systemctl set-property run-product-tracker.service \
-        ExecMainStatus=0
+      systemctl show run-product-tracker.service \
+        --property=Result --value
+
 
       echo "=== Setup Product Tracker Complete ==="
 
