@@ -87,12 +87,12 @@ jobs:
             RESULT=$(ssh -i /tmp/linode_ssh \
               -o StrictHostKeyChecking=no \
               root@${{ steps.create.outputs.ip }} \
-              "systemctl show setup-product-tracker.service --property=Result --value")
+              "systemctl show run-product-tracker.service --property=Result --value")
 
             STATE=$(ssh -i /tmp/linode_ssh \
               -o StrictHostKeyChecking=no \
               root@${{ steps.create.outputs.ip }} \
-              "systemctl is-active setup-product-tracker.service")
+              "systemctl is-active run-product-tracker.service")
 
             echo "State=$STATE Result=$RESULT"
 
@@ -116,7 +116,8 @@ jobs:
         env:
           LINODE_ID: ${{ steps.create.outputs.linode_id }}
         run: |
-          linode-cli linodes delete "$LINODE_ID"
+          echo $LINODE_ID
+          linode-cli linodes delete $LINODE_ID
 
       # --------------------------------------------------
       # 8. Failsafe cleanup (ALWAYS)
@@ -126,4 +127,5 @@ jobs:
         env:
           LINODE_ID: ${{ steps.create.outputs.linode_id }}
         run: |
-          linode-cli linodes delete "$LINODE_ID"
+          echo $LINODE_ID
+          linode-cli linodes delete $LINODE_ID
