@@ -109,10 +109,6 @@ write_files:
       # ---- Setup marker ----
       touch "$HOME/.setup_product_tracker_done"
 
-      systemctl show run-product-tracker.service \
-        --property=Result --value
-
-
       echo "=== Setup Product Tracker Complete ==="
 
   - path: /etc/systemd/system/setup-product-tracker.service
@@ -149,6 +145,9 @@ write_files:
       
       exec python run_product_tracker.py
 
+      systemctl show run-product-tracker.service \
+        --property=Result --value
+
   - path: /etc/systemd/system/run-product-tracker.service
     permissions: "0644"
     content: |
@@ -159,6 +158,7 @@ write_files:
       
       [Service]
       Type=oneshot
+      RemainAfterExit=yes
       User=kpasillas
       Environment=HOME=/home/kpasillas
       RuntimeDirectory=product-tracker
