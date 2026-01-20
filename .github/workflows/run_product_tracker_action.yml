@@ -106,7 +106,7 @@ jobs:
         env:
           LINODE_ID: ${{ steps.create.outputs.linode_id }}
         run: |
-          linode-cli linodes delete $LINODE_ID
+          linode-cli linodes delete "$LINODE_ID"
 
       # --------------------------------------------------
       # 8. Failsafe cleanup (ALWAYS)
@@ -116,4 +116,4 @@ jobs:
         env:
           LINODE_ID: ${{ steps.create.outputs.linode_id }}
         run: |
-          linode-cli linodes delete $LINODE_ID
+          linode-cli linodes delete "$LINODE_ID"
