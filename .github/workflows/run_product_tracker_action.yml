@@ -84,7 +84,7 @@ jobs:
       - name: Wait for run-product-tracker.service
         run: |
           while true; do
-            RESULT=$`(ssh -i /tmp/linode_ssh \
+            RESULT=$(ssh -i /tmp/linode_ssh \
               -o StrictHostKeyChecking=no \
               root@${{ steps.create.outputs.ip }} \
               "systemctl show setup-product-tracker.service --property=Result --value")
