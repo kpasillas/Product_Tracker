@@ -25,8 +25,18 @@ jobs:
             < .github/workflows/cloud-init_template.yaml \
             > .github/workflows/cloud-init.yaml
 
+
+      
       # --------------------------------------------------
-      # 2. Install Linode CLI
+      # 2. Generate SSH key
+      # --------------------------------------------------
+      - name: Generate SSH key
+        run: |
+          ssh-keygen -t ed25519 -f /tmp/linode_ssh -N ""
+
+
+      # --------------------------------------------------
+      # 3. Install Linode CLI
       # --------------------------------------------------
       - name: Install Linode CLI
         uses: linode/action-linode-cli@v1.1.0
@@ -34,37 +44,33 @@ jobs:
           token: ${{ secrets.LINODE_TOKEN }}
 
       # --------------------------------------------------
-      # 3. Create Linode
+      # 4. Deploy Linode with cloud-init user data
       # --------------------------------------------------
       - name: Deploy Linode with cloud-init user data
         id: create
         run: |
-          RESPONSE=$(linode-cli linodes create \
-            --root_pass "${{ secrets.ROOT_PASSWORD }}" \
+          LINODE_JSON=$(linode-cli linodes create \
             --image "linode/ubuntu22.04" \
             --region "us-lax" \
             --type "g6-nanode-1" \
             --label "product-tracker-${{ github.run_id }}" \
+            --authorized_keys "$(cat /tmp/linode_ssh.pub)" \
             --metadata.user_data "$(base64 -w 0 .github/workflows/cloud-init.yaml)" \
             --json)
-
-          echo "$RESPONSE"
-
-          LINODE_ID=$(echo "$RESPONSE" | jq -r '.[0].id')
-          LINODE_IP=$(echo "$RESPONSE" | jq -r '.[0].ipv4[0]')
-
-          echo "linode_id=$LINODE_ID" >> $GITHUB_OUTPUT
-          echo "ip=$LINODE_IP" >> $GITHUB_OUTPUT
+      
+          echo "ip=$(echo "$LINODE_JSON" | jq -r '.[0].ipv4[0]')" >> $GITHUB_OUTPUT
+          echo "id=$(echo "$LINODE_JSON" | jq -r '.[0].id')" >> $GITHUB_OUTPUT
 
       # --------------------------------------------------
-      # 4. Wait for SSH
+      # 5. Wait for SSH
       # --------------------------------------------------
       - name: Wait for SSH
         run: |
-          for i in {1..30}; do
-            if ssh -o StrictHostKeyChecking=no \
-                   -o ConnectTimeout=5 \
-                   root@${{ steps.create.outputs.ip }} "echo SSH ready"; then
+          for i in {1..60}; do
+            if ssh -i /tmp/linode_ssh \
+                  -o StrictHostKeyChecking=no \
+                  -o ConnectTimeout=5 \
+                  root@${{ steps.create.outputs.ip }} "echo SSH ready"; then
               exit 0
             fi
             sleep 10
@@ -72,13 +78,14 @@ jobs:
           exit 1
 
       # --------------------------------------------------
-      # 5. Wait for systemd completion
+      # 6. Wait for systemd completion
       # --------------------------------------------------
       - name: Wait for run-product-tracker.service
         run: |
           for i in {1..60}; do
-            STATUS=$(ssh -o StrictHostKeyChecking=no \
-              ssh root@${{ steps.create.outputs.ip }} \
+            STATUS=$(ssh -i /tmp/linode_ssh \
+              -o StrictHostKeyChecking=no \
+              root@${{ steps.create.outputs.ip }} \
               "systemctl is-active run-product-tracker.service || true")
 
             echo "Attempt $i: $STATUS"
@@ -91,7 +98,7 @@ jobs:
           exit 1
 
       # --------------------------------------------------
-      # 6. Destroy Linode (success path)
+      # 7. Destroy Linode (success path)
       # --------------------------------------------------
       - name: Destroy Linode
         if: success()
@@ -104,7 +111,7 @@ jobs:
             https://api.linode.com/v4/linode/instances/$LINODE_ID
 
       # --------------------------------------------------
-      # 7. Failsafe cleanup (ALWAYS)
+      # 8. Failsafe cleanup (ALWAYS)
       # --------------------------------------------------
       - name: Destroy Linode (failsafe)
         if: always()
