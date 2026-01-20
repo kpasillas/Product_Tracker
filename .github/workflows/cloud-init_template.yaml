@@ -145,7 +145,7 @@ write_files:
       
       exec python run_product_tracker.py
 
-      systemctl set-property setup-product-tracker.service \
+      systemctl set-property run-product-tracker.service \
         ExecMainStatus=0
 
   - path: /etc/systemd/system/run-product-tracker.service
