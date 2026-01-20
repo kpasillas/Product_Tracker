@@ -50,6 +50,7 @@ jobs:
         id: create
         run: |
           LINODE_JSON=$(linode-cli linodes create \
+            --root_pass "${{ secrets.ROOT_PASSWORD }}" \
             --image "linode/ubuntu22.04" \
             --region "us-lax" \
             --type "g6-nanode-1" \
