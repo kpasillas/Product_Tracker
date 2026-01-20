@@ -64,7 +64,7 @@ jobs:
           for i in {1..30}; do
             if ssh -o StrictHostKeyChecking=no \
                    -o ConnectTimeout=5 \
-                   kpasillas@${{ steps.create.outputs.ip }} "echo SSH ready"; then
+                   root@${{ steps.create.outputs.ip }} "echo SSH ready"; then
               exit 0
             fi
             sleep 10
@@ -78,7 +78,7 @@ jobs:
         run: |
           for i in {1..60}; do
             STATUS=$(ssh -o StrictHostKeyChecking=no \
-              kpasillas@${{ steps.create.outputs.ip }} \
+              ssh root@${{ steps.create.outputs.ip }} \
               "systemctl is-active run-product-tracker.service || true")
 
             echo "Attempt $i: $STATUS"
