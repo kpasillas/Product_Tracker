@@ -83,20 +83,30 @@ jobs:
       # --------------------------------------------------
       - name: Wait for run-product-tracker.service
         run: |
-          for i in {1..60}; do
-            STATUS=$(ssh -i /tmp/linode_ssh \
+          while true; do
+            RESULT=$`(ssh -i /tmp/linode_ssh \
               -o StrictHostKeyChecking=no \
               root@${{ steps.create.outputs.ip }} \
-              "systemctl is-active run-product-tracker.service || true")
+              "systemctl show setup-product-tracker.service --property=Result --value")
 
-            echo "Attempt $i: $STATUS"
+            STATE=$(ssh -i /tmp/linode_ssh \
+              -o StrictHostKeyChecking=no \
+              root@${{ steps.create.outputs.ip }} \
+              "systemctl is-active setup-product-tracker.service")
 
-            if [ "$STATUS" = "inactive" ]; then
-              exit 0
+            echo "State=$STATE Result=$RESULT"
+
+            if [[ "$RESULT" == "success" ]]; then
+              echo "✅ setup completed successfully"
+              break
+            fi
+          
+            if [[ "$RESULT" == "exit-code" || "$RESULT" == "signal" ]]; then
+              echo "❌ setup failed"
+              exit 1
             fi
             sleep 60
           done
-          exit 1
 
       # --------------------------------------------------
       # 7. Destroy Linode (success path)
