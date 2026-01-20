@@ -7,6 +7,12 @@
 package_update: true
 package_upgrade: true
 
+apt:
+  sources:
+    google-chrome:
+      source: "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main"
+      keyid: 78BD65473CB3BD13
+
 packages:
   - software-properties-common
   - git
