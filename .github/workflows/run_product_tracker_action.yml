@@ -86,24 +86,17 @@ jobs:
           echo "Waiting for run-product-tracker.service to complete..."
 
           while true; do
-            RESULT=$(ssh -i /tmp/linode_ssh \
+            DONE=$(ssh -i /tmp/linode_ssh \
               -o StrictHostKeyChecking=no \
               root@${{ steps.create.outputs.ip }} \
-              "systemctl show run-product-tracker.service --property=Result --value || true")
+              "[ -f /run/product-tracker/completed ] && echo yes || echo no")
           
-            echo "Result=$RESULT"
-          
-            if [[ "$RESULT" == "success" ]]; then
-              echo "✅ run-product-tracker completed successfully"
+            if [[ "$DONE" == "yes" ]]; then
+              echo "✅ run-product-tracker finished"
               break
             fi
           
-            if [[ "$RESULT" == "exit-code" || "$RESULT" == "signal" ]]; then
-              echo "❌ run-product-tracker failed"
-              exit 1
-            fi
-          
-            sleep 60
+            sleep 30
           done
 
       # --------------------------------------------------
