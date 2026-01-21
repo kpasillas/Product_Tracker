@@ -142,11 +142,10 @@ write_files:
       cd "${APP_DIR}"
       
       source .venv/bin/activate
-      
+
       exec python run_product_tracker.py
 
-      systemctl show run-product-tracker.service \
-        --property=Result --value
+      touch /run/product-tracker/completed
 
   - path: /etc/systemd/system/run-product-tracker.service
     permissions: "0644"
