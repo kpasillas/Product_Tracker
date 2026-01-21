@@ -85,7 +85,9 @@ jobs:
         run: |
           echo "Waiting for run-product-tracker.service to complete..."
 
-          while true; do
+          for i in {1..60}; do
+            echo "Attempt: $i"
+            
             DONE=$(ssh -i /tmp/linode_ssh \
               -o StrictHostKeyChecking=no \
               root@${{ steps.create.outputs.ip }} \
@@ -96,7 +98,7 @@ jobs:
               break
             fi
           
-            sleep 30
+            sleep 60
           done
 
       # --------------------------------------------------
