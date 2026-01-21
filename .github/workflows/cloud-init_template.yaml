@@ -162,6 +162,8 @@ write_files:
       Environment=HOME=/home/kpasillas
       RuntimeDirectory=product-tracker
       RuntimeDirectoryMode=0700
+      RuntimeDirectoryUser=kpasillas
+      RuntimeDirectoryGroup=kpasillas
       Environment=XDG_RUNTIME_DIR=/run/product-tracker
       ExecStart=/usr/local/bin/run-product-tracker.sh
       StandardOutput=journal
