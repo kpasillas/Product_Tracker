@@ -63,7 +63,7 @@ jobs:
           echo "id=$(echo "$LINODE_JSON" | jq -r '.[0].id')" >> $GITHUB_OUTPUT
 
           # echo "${{ steps.create.outputs.id }}"
-          echo "${{ LINODE_JSON }}"
+          echo "$LINODE_JSON" | jq '.'
 
       # --------------------------------------------------
       # 5. Wait for SSH
