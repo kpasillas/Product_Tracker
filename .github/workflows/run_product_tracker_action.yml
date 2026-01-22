@@ -60,9 +60,11 @@ jobs:
             --json)
       
           # echo "ip=$(echo "$LINODE_JSON" | jq -r '.[0].ipv4')" >> $GITHUB_OUTPUT
-          echo "id=$(echo "$LINODE_JSON" | jq -r '.id')" >> $GITHUB_OUTPUT
+          # echo "id=$(echo "$LINODE_JSON" | jq -r '.id')" >> $GITHUB_OUTPUT
+          LINODE_ID=$(echo "$LINODE_JSON" | jq -r '.[0].id')
 
           echo "Output"
+          echo "$LINODE_ID"
           echo "${{ steps.create.outputs.id }}"
           echo "$LINODE_JSON" | jq '.'
 
