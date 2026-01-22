@@ -1,10 +1,11 @@
 name: Run Product Tracker (Linode)
 
 on:
-  workflow_dispatch:
   schedule:
+    - cron: "40 9 * * *"
     - cron: "0 13 * * *"
     - cron: "0 20 * * *"
+  workflow_dispatch:
 
 jobs:
   run:
