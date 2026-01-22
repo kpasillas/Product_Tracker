@@ -77,7 +77,7 @@ jobs:
             if ssh -i /tmp/linode_ssh \
                   -o StrictHostKeyChecking=no \
                   -o ConnectTimeout=5 \
-                  root@${{ steps.create.outputs.ip }} "echo SSH ready"; then
+                  root@"$LINODE_IP" "echo SSH ready"; then
               exit 0
             fi
             sleep 10
@@ -96,7 +96,7 @@ jobs:
             
             DONE=$(ssh -i /tmp/linode_ssh \
               -o StrictHostKeyChecking=no \
-              root@${{ steps.create.outputs.ip }} \
+              root@$"$LINODE_IP" \
               "[ -f /run/product-tracker/completed ] && echo yes || echo no")
           
             if [[ "$DONE" == "yes" ]]; then
@@ -113,7 +113,6 @@ jobs:
       - name: Destroy Linode
         if: success()
         run: |
-          echo "${{ steps.create.outputs.linode_id }}"
           linode-cli linodes delete "$LINODE_ID"
 
       # --------------------------------------------------
@@ -122,5 +121,4 @@ jobs:
       - name: Destroy Linode (failsafe)
         if: always()
         run: |
-          echo "${{ steps.create.outputs.linode_id }}"
           linode-cli linodes delete "$LINODE_ID"
