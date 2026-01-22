@@ -26,8 +26,8 @@ jobs:
           MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
         run: |
           envsubst '${MYSQL_USERNAME} ${MYSQL_PASSWORD} ${MYSQL_HOST}' \
-            < .github/workflows/cloud-init_template.yaml \
-            > .github/workflows/cloud-init.yaml
+            < cloud-init/cloud-init_template.yaml \
+            > cloud-init/cloud-init.yaml
 
 
       
