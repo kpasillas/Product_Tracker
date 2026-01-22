@@ -106,19 +106,15 @@ jobs:
       # --------------------------------------------------
       - name: Destroy Linode
         if: success()
-        env:
-          LINODE_ID: ${{ steps.create.outputs.linode_id }}
         run: |
-          echo $LINODE_ID
-          linode-cli linodes delete $LINODE_ID
+          echo "${{ steps.create.outputs.linode_id }}"
+          linode-cli linodes delete "${{ steps.create.outputs.linode_id }}"
 
       # --------------------------------------------------
       # 8. Failsafe cleanup (ALWAYS)
       # --------------------------------------------------
       - name: Destroy Linode (failsafe)
         if: always()
-        env:
-          LINODE_ID: ${{ steps.create.outputs.linode_id }}
         run: |
-          echo $LINODE_ID
-          linode-cli linodes delete $LINODE_ID
+          echo "${{ steps.create.outputs.linode_id }}"
+          linode-cli linodes delete "${{ steps.create.outputs.linode_id }}"
