@@ -59,14 +59,14 @@ jobs:
             --metadata.user_data "$(base64 -w 0 .github/workflows/cloud-init.yaml)" \
             --json)
       
-          # echo "ip=$(echo "$LINODE_JSON" | jq -r '.[0].ipv4')" >> $GITHUB_OUTPUT
-          # echo "id=$(echo "$LINODE_JSON" | jq -r '.id')" >> $GITHUB_OUTPUT
           LINODE_ID=$(echo "$LINODE_JSON" | jq -r '.[0].id')
+          LINODE_IP=$(echo "$LINODE_JSON" | jq -r '.[0].ipv4[0]')
+      
+          echo "LINODE_ID=$LINODE_ID" >> $GITHUB_ENV
+          echo "LINODE_IP=$LINODE_IP" >> $GITHUB_ENV
 
-          echo "Output"
           echo "$LINODE_ID"
-          echo "${{ steps.create.outputs.id }}"
-          echo "$LINODE_JSON" | jq '.'
+          echo "$LINODE_IP"
 
       # --------------------------------------------------
       # 5. Wait for SSH
@@ -114,7 +114,7 @@ jobs:
         if: success()
         run: |
           echo "${{ steps.create.outputs.linode_id }}"
-          linode-cli linodes delete "${{ steps.create.outputs.linode_id }}"
+          linode-cli linodes delete "$LINODE_ID"
 
       # --------------------------------------------------
       # 8. Failsafe cleanup (ALWAYS)
@@ -123,4 +123,4 @@ jobs:
         if: always()
         run: |
           echo "${{ steps.create.outputs.linode_id }}"
-          linode-cli linodes delete "${{ steps.create.outputs.linode_id }}"
+          linode-cli linodes delete "$LINODE_ID"
