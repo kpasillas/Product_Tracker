@@ -60,7 +60,7 @@ jobs:
             --type "g6-nanode-1" \
             --label "product-tracker-${{ github.run_id }}" \
             --authorized_keys "$(cat /tmp/linode_ssh.pub)" \
-            --metadata.user_data "$(base64 -w 0 .github/workflows/cloud-init.yaml)" \
+            --metadata.user_data "$(base64 -w 0 cloud-init/cloud-init.yaml)" \
             --json)
       
           LINODE_ID=$(echo "$LINODE_JSON" | jq -r '.[0].id')
