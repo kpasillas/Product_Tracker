@@ -59,9 +59,10 @@ jobs:
             --metadata.user_data "$(base64 -w 0 .github/workflows/cloud-init.yaml)" \
             --json)
       
-          echo "ip=$(echo "$LINODE_JSON" | jq -r '.[0].ipv4')" >> $GITHUB_OUTPUT
+          # echo "ip=$(echo "$LINODE_JSON" | jq -r '.[0].ipv4')" >> $GITHUB_OUTPUT
           echo "id=$(echo "$LINODE_JSON" | jq -r '[0].id')" >> $GITHUB_OUTPUT
 
+          echo "Output"
           echo "${{ steps.create.outputs.id }}"
           echo "$LINODE_JSON" | jq '.'
 
