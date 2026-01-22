@@ -62,6 +62,8 @@ jobs:
           echo "ip=$(echo "$LINODE_JSON" | jq -r '.[0].ipv4[0]')" >> $GITHUB_OUTPUT
           echo "id=$(echo "$LINODE_JSON" | jq -r '.[0].id')" >> $GITHUB_OUTPUT
 
+          echo "${{ steps.create.outputs.id }}"
+
       # --------------------------------------------------
       # 5. Wait for SSH
       # --------------------------------------------------
