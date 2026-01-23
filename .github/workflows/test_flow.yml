@@ -1,7 +1,6 @@
 name: Test Flow
 
 on:
-  workflow_dispatch:
   schedule:
     - cron: "*/15 * * * *"
 
