@@ -1,0 +1,26 @@
+name: Test Flow
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/5 * * * *"
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    # environment: env
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Message 1
+        
+        run: |
+          echo "Message #1"
+          sleep 10
+
+      
+      - name: Message 2
+        
+        run: |
+          echo "Message #2"
