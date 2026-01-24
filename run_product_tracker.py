@@ -3,6 +3,7 @@
 from db.connection import get_mysql_engine
 from update_amazon_product_list import update_amazon_product_list
 from update_amazon_product_price import update_amazon_product_price
+from send_tracker_results import email_tracker_results
 import logging
 from logging_config import setup_logging
 
@@ -20,6 +21,11 @@ def main():
     update_amazon_product_price(engine)
 
     logger.info("Amazon update complete")
+
+    logger.info("Sending tracker results...")
+    email_tracker_results(engine)
+
+    logger.info("Sending tracker results complete")
 
 
 if __name__ == "__main__":
