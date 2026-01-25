@@ -111,7 +111,7 @@ jobs:
       # --------------------------------------------------
       # 7. Destroy Linode
       # --------------------------------------------------
-      - name: Destroy Linode
-        if: always()
-        run: |
-          linode-cli linodes delete "$LINODE_ID"
+      # - name: Destroy Linode
+      #   if: always()
+      #   run: |
+      #     linode-cli linodes delete "$LINODE_ID"
