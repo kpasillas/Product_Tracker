@@ -23,9 +23,9 @@ jobs:
           MYSQL_USERNAME: ${{ secrets.MYSQL_USERNAME }}
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
           MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
         run: |
-          envsubst '${MYSQL_USERNAME} ${MYSQL_PASSWORD} ${MYSQL_HOST} ${GMAIL_APP_PASSWORD}' \
+          envsubst '${MYSQL_USERNAME} ${MYSQL_PASSWORD} ${MYSQL_HOST} ${SENDGRID_API_KEY}' \
             < cloud-init/cloud-init_template.yaml \
             > cloud-init/cloud-init.yaml
 
