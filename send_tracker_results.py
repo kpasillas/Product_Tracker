@@ -42,7 +42,7 @@ def get_current_product_prices(engine: Engine, report_id: str) -> Dict:
     with engine.begin() as connection:
         result = connection.execute(
             text(
-                "SELECT name, price, product.id AS id, store FROM price JOIN product ON price.product_id = product.id WHERE report_id = '{}' ORDER BY price ASC".format(
+                "SELECT name, price, product.id AS id, store FROM price JOIN product ON price.product_id = product.id WHERE report_id = '{}' AND price > 0 ORDER BY price ASC".format(
                     report_id
                 )
             )
