@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 import logging
 from typing import Dict, List
 from decimal import Decimal, ROUND_HALF_UP
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import MetaData, Table, text
 from sqlalchemy.engine import Engine
@@ -20,17 +22,19 @@ os.environ["SSL_CERT_FILE"] = certifi.where()
 AMAZON_PRODUCT_URL_BASE = "https://amazon.com/dp/"
 
 
-def get_current_report_id(engine: Engine) -> str:
+def get_current_report_id(engine: Engine) -> Dict:
     """
     Fetch current report ID.
     """
     with engine.begin() as connection:
         result = connection.execute(
             text(
-                "SELECT id FROM product_tracker.report ORDER BY timestamp DESC LIMIT 1"
+                "SELECT id, timestamp FROM product_tracker.report ORDER BY timestamp DESC LIMIT 1"
             )
         )
-        report_id = [row.id for row in result][0]
+
+    keys = ("id", "timestamp")
+    report_id = [dict(zip(keys, report_id)) for report_id in [row for row in result]][0]
 
     return report_id
 
@@ -190,7 +194,7 @@ def email_tracker_results(engine: Engine) -> None:
     load_dotenv()
 
     report_id = get_current_report_id(engine)
-    current_prices = get_current_product_prices(engine, report_id)
+    current_prices = get_current_product_prices(engine, report_id.get("id"))
     average_prices = get_average_product_prices(engine)
 
     avg_price_by_id = {item["id"]: item["average_price"] for item in average_prices}
@@ -223,7 +227,13 @@ def email_tracker_results(engine: Engine) -> None:
     message = Mail(
         from_email="kristopher.pasillas@gmail.com",
         to_emails="kris@kris-p.net",
-        subject="Product Update - {}".format(report_id),
+        subject="Product Update - {} ({})".format(
+            report_id.get("timestamp")
+            .replace(tzinfo=ZoneInfo("UTC"))
+            .astimezone(ZoneInfo("America/Los_Angeles"))
+            .strftime("%Y-%m-%d %H:%M:%S"),
+            report_id.get("id"),
+        ),
         html_content=html_content,
     )
 
