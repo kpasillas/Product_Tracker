@@ -23,7 +23,8 @@ logger = logging.getLogger(__name__)
 
 
 AMAZON_WISHLIST_URLS = [
-    "https://www.amazon.com/hz/wishlist/ls/1VHVB48YFSXWJ?ref_=wl_share"
+    "https://www.amazon.com/hz/wishlist/ls/1VHVB48YFSXWJ?ref_=wl_share",  # Books Wish List
+    "https://www.amazon.com/hz/wishlist/ls/2YRG4OOZ3737F?ref_=wl_share",  # Kristopher's Wish List
 ]
 
 

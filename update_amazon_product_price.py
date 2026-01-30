@@ -29,32 +29,52 @@ def _extract_price_from_page(wait) -> float:
     Preference order:
         Kindle > Paperback > Hardcover
     """
-    toggles = wait.until(
-        EC.presence_of_all_elements_located(
-            (By.CLASS_NAME, "a-button.a-spacing-none.a-button-toggle.format")
+    try:  # First try "books" format
+        toggles = wait.until(
+            EC.presence_of_all_elements_located(
+                (By.CLASS_NAME, "a-button.a-spacing-none.a-button-toggle.format")
+            )
         )
-    )
 
-    prices: Dict[str, float] = {}
+    except:  # Then check for "non-books" format
+        price = -1.0
 
-    for toggle in toggles:
-        title = toggle.find_element(By.CLASS_NAME, "slot-title").text
+        box_groups = wait.until(
+            EC.presence_of_all_elements_located((By.CLASS_NAME, "a-box-group"))
+        )
 
-        price_text = toggle.find_element(By.CLASS_NAME, "slot-price").text
+        for box_group in box_groups:
+            if box_group.find_elements(By.CLASS_NAME, "a-price-whole"):
+                price = float(
+                    box_group.find_elements(By.CLASS_NAME, "a-price-whole")[0].text
+                    + "."
+                    + box_group.find_elements(By.CLASS_NAME, "a-price-fraction")[0].text
+                )
+                break
 
-        try:
-            prices[title] = float(price_text.split("$")[-1])
-        except (TypeError, ValueError):
-            prices[title] = None
+        return price
 
-        extra_messages = toggle.find_elements(By.CLASS_NAME, "slot-extraMessage")
-        if extra_messages and "$" in extra_messages[0].text:
-            prices[title] = float(extra_messages[0].text.split("$")[1].split()[0])
+    else:  # Execute "books" format logic
+        prices: Dict[str, float] = {}
 
-    return prices.get(
-        "Kindle",
-        prices.get("Paperback", prices.get("Hardcover", 0.00)),
-    )
+        for toggle in toggles:
+            title = toggle.find_element(By.CLASS_NAME, "slot-title").text
+
+            price_text = toggle.find_element(By.CLASS_NAME, "slot-price").text
+
+            try:
+                prices[title] = float(price_text.split("$")[-1])
+            except (TypeError, ValueError):
+                prices[title] = None
+
+            extra_messages = toggle.find_elements(By.CLASS_NAME, "slot-extraMessage")
+            if extra_messages and "$" in extra_messages[0].text:
+                prices[title] = float(extra_messages[0].text.split("$")[1].split()[0])
+
+        return prices.get(
+            "Kindle",
+            prices.get("Paperback", prices.get("Hardcover", -1.0)),
+        )
 
 
 def get_product_price(url: str) -> float:
