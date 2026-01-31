@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 AMAZON_PRODUCT_URL_BASE = "https://amazon.com/dp/"
-MAX_RETRIES = 10
+MAX_RETRIES = 3
 RETRY_DELAY_SECONDS = 5
 
 
