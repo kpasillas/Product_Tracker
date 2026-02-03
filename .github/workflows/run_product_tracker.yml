@@ -20,12 +20,13 @@ jobs:
       # --------------------------------------------------
       - name: Render cloud-init
         env:
+          LINODE_TOKEN: ${{ secrets.LINODE_TOKEN }}
           MYSQL_USERNAME: ${{ secrets.MYSQL_USERNAME }}
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
           MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
           SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
         run: |
-          envsubst '${MYSQL_USERNAME} ${MYSQL_PASSWORD} ${MYSQL_HOST} ${SENDGRID_API_KEY}' \
+          envsubst '${LINODE_TOKEN} ${MYSQL_USERNAME} ${MYSQL_PASSWORD} ${MYSQL_HOST} ${SENDGRID_API_KEY}' \
             < cloud-init/cloud-init_template.yaml \
             > cloud-init/cloud-init.yaml
 
