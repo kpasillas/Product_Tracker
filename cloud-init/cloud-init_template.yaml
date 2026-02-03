@@ -199,6 +199,8 @@ write_files:
 runcmd:
   - echo "runcmd - Start"
 
+  - shutdown -h +360
+
   - chown -R kpasillas:kpasillas /home/kpasillas
   - chmod 0755 /usr/local/bin/run-product-tracker.sh
   - chown root:root /usr/local/bin/run-product-tracker.sh
