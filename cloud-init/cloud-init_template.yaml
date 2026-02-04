@@ -32,7 +32,6 @@ packages:
   - libffi-dev
   - liblzma-dev
   - jq
-  - linode-cli
   - google-chrome-stable
   - chromium-chromedriver
 
@@ -153,7 +152,7 @@ write_files:
       
       source .venv/bin/activate
 
-      python run_product_tracker.py
+      # python run_product_tracker.py
 
       touch /run/product-tracker/completed
 
@@ -208,16 +207,16 @@ runcmd:
   - chown root:root /usr/local/bin/run-product-tracker.sh
 
   
-  # - echo "product-tracker.service - Start"
+  - echo "product-tracker.service - Start"
   
-  # - systemctl daemon-reload
+  - systemctl daemon-reload
   
-  # - systemctl enable setup-product-tracker.service
-  # - systemctl start setup-product-tracker.service
+  - systemctl enable setup-product-tracker.service
+  - systemctl start setup-product-tracker.service
 
-  # - systemctl enable run-product-tracker.service
-  # - systemctl start run-product-tracker.service
+  - systemctl enable run-product-tracker.service
+  - systemctl start run-product-tracker.service
   
-  # - echo "product-tracker.service - Finish"
+  - echo "product-tracker.service - Finish"
 
-  # - echo "runcmd - Finish"
+  - echo "runcmd - Finish"
