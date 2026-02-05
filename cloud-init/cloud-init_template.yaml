@@ -142,6 +142,23 @@ write_files:
     content: |
       #!/usr/bin/env bash
       set -euo pipefail
+
+      # -----------------------------
+      # Linode metadata helpers
+      # -----------------------------
+      
+      get_metadata_token() {
+        curl -s -f -X PUT \
+          -H "Metadata-Token-TTL-Seconds: 300" \
+          http://169.254.169.254/v1/token
+      }
+      
+      get_instance_metadata() {
+        local token="$1"
+        curl -s -f \
+          -H "Metadata-Token: ${token}" \
+          http://169.254.169.254/v1/instance
+      }
       
       USER="kpasillas"
       HOME="/home/${USER}"
@@ -152,15 +169,28 @@ write_files:
       
       source .venv/bin/activate
 
-      # python run_product_tracker.py
+      python run_product_tracker.py
 
       touch /run/product-tracker/completed
 
       echo "🏁 Product tracker finished"
-
-      LINODE_ID=$(curl -s http://169.254.169.254/v1/instance | jq -r '.id')
       
       echo "🔥 Deleting Linode ID: $LINODE_ID"
+
+      
+      echo "Fetching Linode metadata..."
+
+      if METADATA_TOKEN="$(get_metadata_token)"; then
+        INSTANCE_JSON="$(get_instance_metadata "$METADATA_TOKEN")"
+      
+        # Optional: parse values if needed later
+        LINODE_ID="$(echo "$INSTANCE_JSON" | jq -r '.id')"
+        LINODE_LABEL="$(echo "$INSTANCE_JSON" | jq -r '.label')"
+      
+        echo "Running on Linode ID=${LINODE_ID} Label=${LINODE_LABEL}"
+      else
+        echo "WARNING: Unable to fetch Linode metadata (non-fatal)"
+      fi
       
       linode-cli linodes delete "$LINODE_ID" --yes
 
