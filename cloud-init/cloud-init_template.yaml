@@ -180,6 +180,9 @@ write_files:
       
       echo "Fetching Linode metadata..."
 
+      LINODE_ID=""
+      LINODE_LABEL=""
+      
       if METADATA_TOKEN="$(get_metadata_token)"; then
         INSTANCE_JSON="$(get_instance_metadata "$METADATA_TOKEN")"
       
@@ -187,12 +190,19 @@ write_files:
         LINODE_ID="$(echo "$INSTANCE_JSON" | jq -r '.id')"
         LINODE_LABEL="$(echo "$INSTANCE_JSON" | jq -r '.label')"
       
-        echo "Running on Linode ID=${LINODE_ID} Label=${LINODE_LABEL}"
-      else
-        echo "WARNING: Unable to fetch Linode metadata (non-fatal)"
+        if [[ -n "$LINODE_ID" ]]; then
+          echo "Running on Linode ID=$LINODE_ID"
+        else
+          echo "Linode ID unavailable (metadata fetch failed)"
+        fi
       fi
       
-      linode-cli linodes delete "$LINODE_ID" --yes
+      if [[ -n "$LINODE_ID" ]]; then
+        echo "Destroying Linode $LINODE_ID"
+        linode-cli linodes delete "$LINODE_ID" --yes
+      else
+        echo "ERROR: LINODE_ID not set — skipping self-destruction"
+      fi
 
   - path: /etc/systemd/system/run-product-tracker.service
     permissions: "0644"
