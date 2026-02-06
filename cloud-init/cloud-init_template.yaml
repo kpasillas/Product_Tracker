@@ -175,9 +175,6 @@ write_files:
 
       echo "🏁 Product tracker finished"
       
-      echo "🔥 Deleting Linode ID: $LINODE_ID"
-
-      
       echo "Fetching Linode metadata..."
 
       LINODE_ID=""
@@ -196,6 +193,8 @@ write_files:
           echo "Linode ID unavailable (metadata fetch failed)"
         fi
       fi
+
+      echo "🔥 Deleting Linode ID: $LINODE_ID"
       
       if [[ -n "$LINODE_ID" ]]; then
         echo "Destroying Linode $LINODE_ID"
