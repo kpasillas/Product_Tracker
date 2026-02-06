@@ -178,21 +178,16 @@ write_files:
       echo "Fetching Linode metadata..."
 
       LINODE_ID=""
-      LINODE_LABEL=""
-      
-      if METADATA_TOKEN="$(get_metadata_token)"; then
-        INSTANCE_JSON="$(get_instance_metadata "$METADATA_TOKEN")"
-      
-        # Optional: parse values if needed later
-        LINODE_ID="$(echo "$INSTANCE_JSON" | jq -r '.id')"
-        LINODE_LABEL="$(echo "$INSTANCE_JSON" | jq -r '.label')"
-      
-        if [[ -n "$LINODE_ID" ]]; then
-          echo "Running on Linode ID=$LINODE_ID"
-        else
-          echo "Linode ID unavailable (metadata fetch failed)"
+
+      for i in {1..5}; do
+        if METADATA_TOKEN="$(get_metadata_token)"; then
+          INSTANCE_JSON="$(get_instance_metadata "$METADATA_TOKEN" || true)"
+          LINODE_ID="$(echo "$INSTANCE_JSON" | jq -r '.id // empty')"
         fi
-      fi
+      
+        [[ -n "$LINODE_ID" ]] && break
+        sleep 2
+      done
 
       echo "🔥 Deleting Linode ID: $LINODE_ID"
       
