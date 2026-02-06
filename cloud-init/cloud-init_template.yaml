@@ -180,6 +180,8 @@ write_files:
       LINODE_ID=""
 
       for i in {1..5}; do
+        echo "Attempt: $i / 5"
+        
         if METADATA_TOKEN="$(get_metadata_token)"; then
           INSTANCE_JSON="$(get_instance_metadata "$METADATA_TOKEN" || true)"
           LINODE_ID="$(echo "$INSTANCE_JSON" | jq -r '.id // empty')"
