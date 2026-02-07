@@ -60,15 +60,6 @@ write_files:
       MYSQL_HOST="${MYSQL_HOST}"
       SENDGRID_API_KEY="${SENDGRID_API_KEY}"
 
-  # - path: /root/.linode-cli
-  #   permissions: "0600"
-  #   owner: root:root
-  #   content: |
-  #     [DEFAULT]
-  #     token = ${LINODE_TOKEN}
-  #     default-user = DEFAULT
-  #     suppress-version-warning = true
-
   - path: /usr/local/bin/setup-product-tracker.sh
     permissions: "0755"
     content: |
