@@ -17,15 +17,15 @@ def main():
     logger.info("Updating Amazon product list...")
     update_amazon_product_list(engine)
 
-    # logger.info("Updating Amazon product prices...")
-    # update_amazon_product_price(engine)
+    logger.info("Updating Amazon product prices...")
+    update_amazon_product_price(engine)
 
-    # logger.info("Amazon update complete")
+    logger.info("Amazon update complete")
 
-    # logger.info("Sending tracker results...")
-    # email_tracker_results(engine)
+    logger.info("Sending tracker results...")
+    email_tracker_results(engine)
 
-    # logger.info("Sending tracker results complete")
+    logger.info("Sending tracker results complete")
 
 
 if __name__ == "__main__":
