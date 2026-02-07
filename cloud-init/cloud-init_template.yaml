@@ -191,7 +191,7 @@ write_files:
       
       if [[ -n "$LINODE_ID" ]]; then
         echo "Destroying Linode $LINODE_ID"
-        linode-cli linodes delete "$LINODE_ID" --yes
+        linode-cli linodes delete "$LINODE_ID"
       else
         echo "ERROR: LINODE_ID not set — skipping self-destruction"
       fi
