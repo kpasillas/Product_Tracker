@@ -79,7 +79,6 @@ write_files:
       HOME="/home/${USER}"
       APP_DIR="${HOME}/Product_Tracker"
 
-      export LINODE_CLI_TOKEN="${LINODE_TOKEN}"
       export PYENV_ROOT="$HOME/.pyenv"
       export PATH="$PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH"
 
@@ -162,6 +161,8 @@ write_files:
           -H "Metadata-Token: ${token}" \
           http://169.254.169.254/v1/instance
       }
+      
+      export LINODE_CLI_TOKEN="${LINODE_TOKEN}"
       
       USER="kpasillas"
       HOME="/home/${USER}"
