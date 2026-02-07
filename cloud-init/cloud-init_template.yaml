@@ -60,12 +60,14 @@ write_files:
       MYSQL_HOST="${MYSQL_HOST}"
       SENDGRID_API_KEY="${SENDGRID_API_KEY}"
 
-  - path: /root/.config/linode-cli/config
+  - path: /root/.linode-cli
     permissions: "0600"
     owner: root:root
     content: |
       [DEFAULT]
       token = ${LINODE_TOKEN}
+      default-user = DEFAULT
+      suppress-version-warning = true
 
   - path: /usr/local/bin/setup-product-tracker.sh
     permissions: "0755"
@@ -177,28 +179,20 @@ write_files:
       
       echo "Fetching Linode metadata..."
 
-      LINODE_ID=""
+      LINODE_ID="$(linode-cli linodes list --text | grep "product-tracker" | awk '{print $1}')"
+      LINODE_IP="$(linode-cli linodes list --text | grep "product-tracker" | awk '{print $7}')"
 
-      for i in {1..5}; do
-        echo "Attempt: $i / 5"
-        
-        if METADATA_TOKEN="$(get_metadata_token)"; then
-          INSTANCE_JSON="$(get_instance_metadata "$METADATA_TOKEN" || true)"
-          LINODE_ID="$(echo "$INSTANCE_JSON" | jq -r '.id // empty')"
-        fi
-      
-        [[ -n "$LINODE_ID" ]] && break
-        sleep 2
-      done
+      echo "Linode ID: $LINODE_ID"
+      echo "Linode IP: $LINODE_IP"
 
-      echo "🔥 Deleting Linode ID: $LINODE_ID"
+      # echo "🔥 Deleting Linode ID: $LINODE_ID"
       
-      if [[ -n "$LINODE_ID" ]]; then
-        echo "Destroying Linode $LINODE_ID"
-        linode-cli linodes delete "$LINODE_ID" --yes
-      else
-        echo "ERROR: LINODE_ID not set — skipping self-destruction"
-      fi
+      # if [[ -n "$LINODE_ID" ]]; then
+      #   echo "Destroying Linode $LINODE_ID"
+      #   linode-cli linodes delete "$LINODE_ID" --yes
+      # else
+      #   echo "ERROR: LINODE_ID not set — skipping self-destruction"
+      # fi
 
   - path: /etc/systemd/system/run-product-tracker.service
     permissions: "0644"
