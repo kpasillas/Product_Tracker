@@ -187,14 +187,14 @@ write_files:
       echo "Linode ID: $LINODE_ID"
       echo "Linode IP: $LINODE_IP"
 
-      # echo "🔥 Deleting Linode ID: $LINODE_ID"
+      echo "🔥 Deleting Linode ID: $LINODE_ID"
       
-      # if [[ -n "$LINODE_ID" ]]; then
-      #   echo "Destroying Linode $LINODE_ID"
-      #   linode-cli linodes delete "$LINODE_ID" --yes
-      # else
-      #   echo "ERROR: LINODE_ID not set — skipping self-destruction"
-      # fi
+      if [[ -n "$LINODE_ID" ]]; then
+        echo "Destroying Linode $LINODE_ID"
+        linode-cli linodes delete "$LINODE_ID" --yes
+      else
+        echo "ERROR: LINODE_ID not set — skipping self-destruction"
+      fi
 
   - path: /etc/systemd/system/run-product-tracker.service
     permissions: "0644"
