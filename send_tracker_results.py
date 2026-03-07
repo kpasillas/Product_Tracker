@@ -217,7 +217,7 @@ def email_tracker_results(engine: Engine) -> None:
         item.update({"link": f"{AMAZON_PRODUCT_URL_BASE}{item['id']}"})
 
     sorted_prices = sorted(
-        combined_prices, key=lambda item: (item["price"], item["%_discount"])
+        combined_prices, key=lambda item: (item["%_discount"], item["price"])
     )
 
     sg = sendgrid.SendGridAPIClient(api_key=os.environ["SENDGRID_API_KEY"])
