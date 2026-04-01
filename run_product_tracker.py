@@ -22,8 +22,8 @@ def main():
 
     logger.info("Amazon update complete")
 
-    logger.info("Sending tracker results...")
-    email_tracker_results(engine)
+    # logger.info("Sending tracker results...")
+    # email_tracker_results(engine)
 
     logger.info("Sending tracker results complete")
 
