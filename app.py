@@ -5,13 +5,18 @@ from db.connection import get_mysql_engine
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-st.set_page_config(layout="wide")
+# -------------------------
+# PAGE CONFIG
+# -------------------------
+st.set_page_config(layout="wide", page_title="Deal Tracker", page_icon="🛒")
 
-st.title("🛒 Deal Tracker")
+st.title("🛒 Deal Intelligence Dashboard")
 
-# conn = get_connection()
 engine = get_mysql_engine()
 
+# -------------------------
+# LATEST REPORT
+# -------------------------
 report_query = """
     SELECT *
     FROM product_tracker.report
@@ -20,6 +25,7 @@ report_query = """
 """
 
 report_df = pd.read_sql(report_query, engine)
+
 report_id = str(report_df["id"].max())
 report_date = (
     datetime.strptime(str(report_df["timestamp"].max()), "%Y-%m-%d %H:%M:%S")
@@ -27,69 +33,112 @@ report_date = (
     .astimezone(ZoneInfo("America/Los_Angeles"))
 )
 
+st.caption(f"📅 Last updated: {report_date.strftime('%b %d, %Y %I:%M %p')}")
+
+# -------------------------
+# CURRENT PRICES
+# -------------------------
 current_query = f"""
     SELECT report_id, product.id AS product_id, name AS Name, price AS price_num, store AS Store
     FROM price JOIN product ON price.product_id = product.id
-    WHERE
-            report_id = "{report_id}"
-        AND price >= 0
-    ORDER BY price ASC
+    WHERE report_id = "{report_id}"
+      AND price >= 0
 """
 
 current_df = pd.read_sql(current_query, engine)
-product_id_list = tuple(current_df["product_id"].reset_index(drop=True).to_list())
 
+product_id_list = tuple(current_df["product_id"].tolist())
+
+# -------------------------
+# AVERAGE PRICES (3 months)
+# -------------------------
 avg_query = """
     SELECT product_id AS product_id, ROUND(AVG(price), 2) AS avg_price_num
     FROM price
-    WHERE
-        report_id IN (
-            SELECT id
-            FROM report
-            WHERE
-                    timestamp >= NOW() - INTERVAL 3 MONTH
-                AND timestamp != (SELECT MAX(timestamp) FROM report)
-        )
+    WHERE report_id IN (
+        SELECT id
+        FROM report
+        WHERE timestamp >= NOW() - INTERVAL 3 MONTH
+    )
     GROUP BY product_id
 """
 
-avg_df = pd.read_sql(avg_query, engine).set_index(keys="product_id")
+avg_df = pd.read_sql(avg_query, engine).set_index("product_id")
 
-current_df = current_df.join((avg_df), on="product_id")
+current_df = current_df.join(avg_df, on="product_id")
+
+# -------------------------
+# METRICS
+# -------------------------
 current_df["pct_change"] = (
     current_df["price_num"] - current_df["avg_price_num"]
 ) / current_df["avg_price_num"]
+
 current_df["Price"] = current_df["price_num"].map("${:,.2f}".format)
-current_df["% Change"] = current_df["pct_change"].map("{:.2%}".format)
+current_df["% vs Avg"] = current_df["pct_change"].map("{:.1%}".format)
 
-# Top deals
-st.subheader("🔥 Best Deals")
-st.caption(f"As of {report_date.strftime("%m/%d/%y %H:%M")}")
-sorted_df = current_df.sort_values("price_num", ascending=True).loc[
-    :, ["Name", "Price", "% Change", "Store"]
-]
-st.dataframe(sorted_df)
 
-# Select product
-product_list = pd.concat(
-    [
-        current_df["Name"].sort_values(ascending=True).iloc[:0],
-        pd.DataFrame({"Name": ["All"]}),
-        current_df["Name"].sort_values(ascending=True).iloc[0:],
-    ]
-).reset_index(drop=True)
-product = st.selectbox("Select product", product_list)
+# Color flag
+def flag(row):
+    if row["pct_change"] < -0.15:
+        return "🔥 Deal"
+    elif row["pct_change"] < 0:
+        return "👍 Good"
+    else:
+        return "⚠️ Normal"
 
+
+current_df["Signal"] = current_df.apply(flag, axis=1)
+
+# -------------------------
+# KPI CARDS
+# -------------------------
+col1, col2, col3 = st.columns(3)
+
+best_deal = current_df["pct_change"].min()
+avg_discount = current_df["pct_change"].mean()
+item_count = len(current_df)
+
+col1.metric("🔥 Best Deal", f"{best_deal:.1%}")
+col2.metric("📉 Avg Discount", f"{avg_discount:.1%}")
+col3.metric("📦 Items Tracked", item_count)
+
+st.divider()
+
+# -------------------------
+# TOP DEALS TABLE
+# -------------------------
+st.subheader("🔥 Best Deals Right Now")
+
+sorted_df = current_df.sort_values("price_num")
+
+display_df = sorted_df[["Name", "Price", "% vs Avg", "Store", "Signal"]]
+
+st.dataframe(display_df, use_container_width=True, hide_index=True)
+
+# -------------------------
+# PRODUCT SELECTOR
+# -------------------------
+product_list = ["All"] + sorted(current_df["Name"].unique().tolist())
+product = st.selectbox("🔎 Select product", product_list)
+
+# -------------------------
+# HISTORY QUERIES
+# -------------------------
 single_item_history_query = f"""
     SELECT DATE(timestamp) AS Date, name AS Name, AVG(price) AS Price
-    FROM (price JOIN product ON price.product_id = product.id) JOIN report on price.report_id = report.id
+    FROM price
+    JOIN product ON price.product_id = product.id
+    JOIN report ON price.report_id = report.id
     WHERE product.name = "{product}"
     GROUP BY DATE(timestamp), name
 """
 
 all_item_history_query = f"""
     SELECT DATE(timestamp) AS Date, AVG(price) AS Price
-    FROM (price JOIN product ON price.product_id = product.id) JOIN report on price.report_id = report.id
+    FROM price
+    JOIN product ON price.product_id = product.id
+    JOIN report ON price.report_id = report.id
     WHERE product.id IN {product_id_list}
     GROUP BY DATE(timestamp)
 """
@@ -100,7 +149,16 @@ history_df = pd.read_sql(
 
 history_df["Date"] = pd.to_datetime(history_df["Date"])
 
+# -------------------------
+# CHART (ALTair upgrade)
+# -------------------------
 st.subheader("📉 Price History")
-st.line_chart(
-    data=history_df.set_index("Date")["Price"], x_label="Date", y_label="Price"
+
+chart = (
+    alt.Chart(history_df)
+    .mark_line(point=True)
+    .encode(x="Date:T", y="Price:Q", tooltip=["Date", "Price"])
+    .interactive()
 )
+
+st.altair_chart(chart, use_container_width=True)
