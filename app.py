@@ -10,13 +10,124 @@ from zoneinfo import ZoneInfo
 # -------------------------
 st.set_page_config(layout="wide", page_title="Deal Tracker", page_icon="🛒")
 
-st.title("🛒 Deal Intelligence Dashboard")
+st.title("🛒 Product Tracker")
 
 engine = get_mysql_engine()
 
 # -------------------------
-# LATEST REPORT
+# BUILD HTML
 # -------------------------
+
+
+def render_table(df):
+    html = """
+    <style>
+    .deal-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .deal-table th {
+        text-align: left;
+        padding: 10px;
+        border-bottom: 2px solid #ddd;
+        font-size: 14px;
+        color: #666;
+    }
+
+    .deal-table td {
+        padding: 12px 10px;
+        border-bottom: 1px solid #eee;
+        font-size: 15px;
+    }
+
+    .deal-row:hover {
+        background-color: #f9fafb;
+    }
+
+    .price {
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .vs_avg {
+        white-space: nowrap;
+    }
+
+    .good { color: #16a34a; }
+    .bad { color: #dc2626; }
+    .neutral { color: #6b7280; }
+
+    .buy-btn {
+        background-color: #71b3e5;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+
+    .buy-btn:hover {
+        background-color: #3d9be2;
+    }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+        .deal-table th, .deal-table td {
+            font-size: 12px;
+            padding: 8px;
+        }
+    }
+    </style>
+
+    <table class="deal-table">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Price</th>
+                <th>Vs Avg</th>
+                <th>Store</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+    """
+
+    for _, row in df.iterrows():
+
+        # Color logic
+        if row["pct_change"] < -0.15:
+            cls = "good"
+            signal = "🔥"
+        elif row["pct_change"] < 0:
+            cls = "good"
+            signal = "👍"
+        else:
+            cls = "neutral"
+            signal = "—"
+
+        url = f"https://amazon.com/dp/{row['product_id']}"
+
+        html += f"""
+        <tr class="deal-row">
+            <td>{row['Name']}</td>
+            <td class="price">{row['Price']}</td>
+            <td class="{cls} vs_avg">{row['% vs Avg']} {signal}</td>
+            <td>{row['Store']}</td>
+            <td>
+                <a class="buy-btn" href="{url}" target="_blank">
+                    🛒 Buy Now
+                </a>
+            </td>
+        </tr>
+        """
+
+    return html
+
+
 report_query = """
     SELECT *
     FROM product_tracker.report
@@ -41,8 +152,9 @@ st.caption(f"📅 Last updated: {report_date.strftime('%b %d, %Y %I:%M %p')}")
 current_query = f"""
     SELECT report_id, product.id AS product_id, name AS Name, price AS price_num, store AS Store
     FROM price JOIN product ON price.product_id = product.id
-    WHERE report_id = "{report_id}"
-      AND price >= 0
+    WHERE
+            report_id = "{report_id}"
+        AND price >= 0
 """
 
 current_df = pd.read_sql(current_query, engine)
@@ -58,7 +170,8 @@ avg_query = """
     WHERE report_id IN (
         SELECT id
         FROM report
-        WHERE timestamp >= NOW() - INTERVAL 3 MONTH
+        WHERE
+            timestamp >= NOW() - INTERVAL 3 MONTH
     )
     GROUP BY product_id
 """
@@ -112,9 +225,9 @@ st.subheader("🔥 Best Deals Right Now")
 
 sorted_df = current_df.sort_values("price_num")
 
-display_df = sorted_df[["Name", "Price", "% vs Avg", "Store", "Signal"]]
+html_table = render_table(sorted_df)
 
-st.dataframe(display_df, use_container_width=True, hide_index=True)
+st.html(html_table)
 
 # -------------------------
 # PRODUCT SELECTOR
@@ -130,7 +243,9 @@ single_item_history_query = f"""
     FROM price
     JOIN product ON price.product_id = product.id
     JOIN report ON price.report_id = report.id
-    WHERE product.name = "{product}"
+    WHERE
+            product.name = "{product}"
+        AND price >= 0
     GROUP BY DATE(timestamp), name
 """
 
@@ -139,7 +254,9 @@ all_item_history_query = f"""
     FROM price
     JOIN product ON price.product_id = product.id
     JOIN report ON price.report_id = report.id
-    WHERE product.id IN {product_id_list}
+    WHERE
+            product.id IN {product_id_list}
+        AND price >= 0
     GROUP BY DATE(timestamp)
 """
 
