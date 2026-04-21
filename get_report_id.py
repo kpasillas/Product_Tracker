@@ -2,9 +2,10 @@
 
 from datetime import datetime
 from sqlalchemy import text
+from typing import Dict
 
 
-def get_report_id(engine):
+def get_report_id(engine) -> Dict:
     now = datetime.now()
 
     reportID = (

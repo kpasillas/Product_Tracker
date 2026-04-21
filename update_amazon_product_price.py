@@ -12,7 +12,6 @@ from sqlalchemy import MetaData, Table, text
 from sqlalchemy.engine import Engine
 
 from selenium_utils import create_webdriver, create_wait, safe_get, random_delay
-from get_report_id import get_report_id
 
 logger = logging.getLogger(__name__)
 
@@ -107,13 +106,12 @@ def get_product_price(url: str) -> float:
                 sleep(RETRY_DELAY_SECONDS)
 
 
-def update_amazon_product_price(engine: Engine) -> None:
+def update_amazon_product_price(engine: Engine, report_record: Dict) -> None:
     """
     Fetch prices for all Amazon products and store them in the database.
     """
     logger.info("Starting Amazon product price update")
 
-    report_record = get_report_id(engine)
     report_id = report_record.get("id")
 
     with engine.begin() as connection:
