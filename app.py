@@ -223,9 +223,15 @@ st.divider()
 # -------------------------
 st.subheader("🔥 Best Deals Right Now")
 
-sorted_df = current_df.sort_values("price_num")
+view_type = st.radio(
+    label="**Sort by**", options=["Price", "Discount"], horizontal=True
+)
 
-html_table = render_table(sorted_df)
+html_table = render_table(
+    current_df.sort_values(
+        "price_num" if view_type == "Price" else "pct_change", ascending=True
+    )
+)
 
 st.html(html_table)
 
