@@ -139,10 +139,6 @@ def update_amazon_product_price(engine: Engine, report_record: Dict) -> None:
 
     with engine.begin() as connection:
         connection.execute(
-            Table("report", MetaData(), autoload_with=engine).insert(),
-            report_record,
-        )
-        connection.execute(
             Table("price", MetaData(), autoload_with=engine).insert(),
             price_rows,
         )

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from datetime import datetime
-from sqlalchemy import text
+from sqlalchemy import MetaData, Table, text
 from typing import Dict
 
 
@@ -21,5 +21,15 @@ def get_report_id(engine) -> Dict:
 
     idList = [row.id for row in result]
     reportID += chr(ord(idList[0][-1]) + 1) if idList else "a"
+    report_record = {
+        "id": reportID,
+        "timestamp": now.strftime(format="%Y-%m-%d %H:%M:%S"),
+    }
 
-    return {"id": reportID, "timestamp": now.strftime(format="%Y-%m-%d %H:%M:%S")}
+    with engine.begin() as connection:
+        connection.execute(
+            Table("report", MetaData(), autoload_with=engine).insert(),
+            report_record,
+        )
+
+    return report_record
