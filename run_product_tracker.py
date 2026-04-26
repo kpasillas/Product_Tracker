@@ -30,6 +30,13 @@ def main():
 
     logger.info("Amazon update finish")
 
+    logger.info("Apple TV update start")
+
+    logger.info("Updating Apple TV product prices...")
+    update_appletv_product_price(engine, report_record)
+
+    logger.info("Apple TV update finish")
+
     # logger.info("Sending tracker results...")
     # email_tracker_results(engine)
 
