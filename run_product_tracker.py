@@ -18,29 +18,26 @@ def main():
 
     engine = get_mysql_engine()
 
-    report_record = get_report_id(engine)
-
-    logger.info("Amazon update start")
+    logger.info("Product Tracker start")
 
     logger.info("Updating Amazon product list...")
     update_amazon_product_list(engine)
 
+    logger.info("Getting report ID...")
+    report_record = get_report_id(engine)
+
     logger.info("Updating Amazon product prices...")
     update_amazon_product_price(engine, report_record)
 
-    logger.info("Amazon update finish")
-
-    logger.info("Apple TV update start")
-
     logger.info("Updating Apple TV product prices...")
     update_appletv_product_price(engine, report_record)
-
-    logger.info("Apple TV update finish")
 
     # logger.info("Sending tracker results...")
     # email_tracker_results(engine)
 
     # logger.info("Sending tracker results complete")
+
+    logger.info("Product Tracker finish")
 
 
 if __name__ == "__main__":
