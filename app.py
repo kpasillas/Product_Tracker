@@ -2,6 +2,7 @@ import streamlit as st
 import altair as alt
 import pandas as pd
 from db.connection import get_mysql_engine
+from sqlalchemy import MetaData, Table, text
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -128,18 +129,31 @@ def render_table(df):
     return html
 
 
-report_query = """
-    SELECT *
-    FROM product_tracker.report
-    ORDER BY timestamp DESC
-    LIMIT 1
-"""
+query = text("""
+    SELECT report.id AS report_id, report.timestamp AS report_date, COUNT(*)
+    FROM price JOIN report ON price.report_id = report.id
+    WHERE report_id IN (
+        SELECT id FROM (
+            SELECT id
+            FROM report
+            ORDER BY timestamp DESC
+            LIMIT 2
+        ) AS latest_reports
+    )
+    GROUP BY report.id, report.timestamp
+    ORDER BY report.timestamp DESC
+""")
 
-report_df = pd.read_sql(report_query, engine)
+with engine.begin() as connection:
+    result = connection.execute(query)
 
-report_id = str(report_df["id"].max())
+report_id_list = [
+    {"report_id": row.report_id, "report_date": row.report_date} for row in result
+]
+
+report_id = report_id_list[0]["report_id"]
 report_date = (
-    datetime.strptime(str(report_df["timestamp"].max()), "%Y-%m-%d %H:%M:%S")
+    report_id_list[0]["report_date"]
     .replace(tzinfo=ZoneInfo("UTC"))
     .astimezone(ZoneInfo("America/Los_Angeles"))
 )
