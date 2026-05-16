@@ -59,6 +59,7 @@ write_files:
       MYSQL_PASSWORD="${MYSQL_PASSWORD}"
       MYSQL_HOST="${MYSQL_HOST}"
       SENDGRID_API_KEY="${SENDGRID_API_KEY}"
+      NTFY_TOPIC="${NTFY_TOPIC}"
 
   - path: /usr/local/bin/setup-product-tracker.sh
     permissions: "0755"
@@ -154,14 +155,31 @@ write_files:
       }
       
       export LINODE_CLI_TOKEN="${LINODE_TOKEN}"
-      
+
       USER="kpasillas"
       HOME="/home/${USER}"
       APP_DIR="${HOME}/Product_Tracker"
-      
+
       export HOME
       cd "${APP_DIR}"
-      
+
+      # Load .env so NTFY_TOPIC is available in this shell
+      set -a; source .env; set +a
+
+      # Send ntfy notification (best-effort — never fail the script)
+      ntfy_notify() {
+        local title="$1"
+        local msg="$2"
+        curl -s -o /dev/null \
+          -H "Title: ${title}" \
+          -H "Priority: default" \
+          -d "${msg}" \
+          "https://ntfy.sh/${NTFY_TOPIC}" || true
+      }
+
+      # Notify on unexpected failure
+      trap 'ntfy_notify "❌ Product Tracker Failed" "Script failed at $(date -u)"' ERR
+
       source .venv/bin/activate
 
       python run_product_tracker.py
@@ -169,6 +187,8 @@ write_files:
       touch /run/product-tracker/completed
 
       echo "🏁 Product tracker finished"
+
+      ntfy_notify "✅ Product Tracker Done" "Completed successfully at $(date -u)"
       
       echo "Fetching Linode metadata..."
 
