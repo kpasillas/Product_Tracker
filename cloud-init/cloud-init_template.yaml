@@ -163,8 +163,8 @@ write_files:
       export HOME
       cd "${APP_DIR}"
 
-      # Load .env so NTFY_TOPIC is available in this shell
-      set -a; source .env; set +a
+      # Baked in at render time by envsubst
+      NTFY_TOPIC="${NTFY_TOPIC}"
 
       # Send ntfy notification (best-effort — never fail the script)
       ntfy_notify() {
@@ -223,8 +223,6 @@ write_files:
       Environment=HOME=/home/kpasillas
       RuntimeDirectory=product-tracker
       RuntimeDirectoryMode=0700
-      RuntimeDirectoryUser=kpasillas
-      RuntimeDirectoryGroup=kpasillas
       Environment=XDG_RUNTIME_DIR=/run/product-tracker
       ExecStart=/usr/local/bin/run-product-tracker.sh
       StandardOutput=journal
