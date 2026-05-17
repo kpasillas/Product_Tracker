@@ -30,14 +30,22 @@ def fetch_current_data():
     """
 
     report_query = text("""
-        SELECT id AS report_id, timestamp AS report_date
-        FROM report
-        ORDER BY timestamp DESC
-        LIMIT 1
+        SELECT report.id AS report_id, report.timestamp AS report_date, COUNT(*)
+        FROM price JOIN report ON price.report_id = report.id
+        WHERE report_id IN (
+            SELECT id FROM (
+                SELECT id
+                FROM report
+                ORDER BY timestamp DESC
+                LIMIT 2
+            ) AS latest_reports
+        )
+        GROUP BY report.id, report.timestamp
+        ORDER BY report.timestamp DESC
     """)
 
     with engine.begin() as conn:
-        row = conn.execute(report_query).fetchone()
+        row = conn.execute(report_query).first()
 
     report_id = row.report_id
     report_date = row.report_date.replace(tzinfo=ZoneInfo("UTC")).astimezone(
@@ -53,7 +61,7 @@ def fetch_current_data():
         FROM price
         JOIN product ON price.product_id = product.id
         WHERE report_id = "{report_id}"
-          AND price >= 0
+            AND price >= 0
     """
     current_df = pd.read_sql(current_query, engine)
 
@@ -176,12 +184,12 @@ def kpi_card(label, value, color="#111827"):
 # -------------------------
 
 TABLE_COLUMNS = [
-    {"name": "Product",      "id": "name",       "type": "text"},
-    {"name": "Price",        "id": "price_fmt",  "type": "text"},
-    {"name": "vs 3-mo avg",  "id": "pct_fmt",    "type": "text"},
-    {"name": "Store",        "id": "store",      "type": "text"},
-    {"name": "",             "id": "buy_link",   "type": "text", "presentation": "markdown"},
-    {"name": "",             "id": "pct_change", "type": "numeric"},  # hidden; drives row coloring
+    {"name": "Product", "id": "name", "type": "text"},
+    {"name": "Price", "id": "price_fmt", "type": "text"},
+    {"name": "vs 3-mo avg", "id": "pct_fmt", "type": "text"},
+    {"name": "Store", "id": "store", "type": "text"},
+    {"name": "", "id": "buy_link", "type": "text", "presentation": "markdown"},
+    {"name": "", "id": "pct_change", "type": "numeric"},  # hidden; drives row coloring
 ]
 
 TABLE_STYLE_CONDITIONAL = [
@@ -194,7 +202,10 @@ TABLE_STYLE_CONDITIONAL = [
         "fontWeight": "500",
     },
     {
-        "if": {"filter_query": "{pct_change} >= -0.15 and {pct_change} < 0", "column_id": "pct_fmt"},
+        "if": {
+            "filter_query": "{pct_change} >= -0.15 and {pct_change} < 0",
+            "column_id": "pct_fmt",
+        },
         "color": "#2563eb",
     },
     {
@@ -212,24 +223,37 @@ app.layout = html.Div(
     [
         dcc.Interval(id="refresh-interval", interval=10 * 60 * 1000, n_intervals=0),
         dcc.Store(id="data-store"),
-
         # --- Dark header ---
         html.Div(
             html.Div(
                 [
                     html.Div(
                         [
-                            html.Span("🛒", style={"fontSize": "36px", "marginRight": "12px"}),
+                            html.Span(
+                                "🛒", style={"fontSize": "36px", "marginRight": "12px"}
+                            ),
                             html.Span(
                                 "Deal Tracker",
-                                style={"color": "#e8edf4", "fontSize": "36px", "fontWeight": "700"},
+                                style={
+                                    "color": "#e8edf4",
+                                    "fontSize": "36px",
+                                    "fontWeight": "700",
+                                },
                             ),
                         ],
-                        style={"display": "flex", "alignItems": "center", "marginBottom": "6px"},
+                        style={
+                            "display": "flex",
+                            "alignItems": "center",
+                            "marginBottom": "6px",
+                        },
                     ),
                     html.Span(
                         id="last-updated",
-                        style={"fontSize": "12px", "color": "#6b7a99", "paddingLeft": "4px"},
+                        style={
+                            "fontSize": "12px",
+                            "color": "#6b7a99",
+                            "paddingLeft": "4px",
+                        },
                     ),
                 ],
                 style={
@@ -254,7 +278,6 @@ app.layout = html.Div(
                 "zIndex": "1000",
             },
         ),
-
         # --- Main content ---
         html.Div(
             [
@@ -267,15 +290,23 @@ app.layout = html.Div(
                     ],
                     className="kpi-grid",
                 ),
-
-                html.Hr(style={"border": "none", "borderTop": "1px solid #e5e7eb", "margin": "0 0 24px"}),
-
+                html.Hr(
+                    style={
+                        "border": "none",
+                        "borderTop": "1px solid #e5e7eb",
+                        "margin": "0 0 24px",
+                    }
+                ),
                 # Section title
                 html.P(
                     "Best deals right now",
-                    style={"fontSize": "15px", "fontWeight": "500", "color": "#111827", "margin": "0 0 14px"},
+                    style={
+                        "fontSize": "15px",
+                        "fontWeight": "500",
+                        "color": "#111827",
+                        "margin": "0 0 14px",
+                    },
                 ),
-
                 # Controls row
                 html.Div(
                     [
@@ -283,13 +314,17 @@ app.layout = html.Div(
                             [
                                 html.Span(
                                     "Sort by",
-                                    style={"fontSize": "13px", "color": "#9ca3af", "marginRight": "10px"},
+                                    style={
+                                        "fontSize": "13px",
+                                        "color": "#9ca3af",
+                                        "marginRight": "10px",
+                                    },
                                 ),
                                 dcc.RadioItems(
                                     id="sort-radio",
                                     options=[
                                         {"label": "Discount", "value": "pct_change"},
-                                        {"label": "Price",    "value": "price_num"},
+                                        {"label": "Price", "value": "price_num"},
                                     ],
                                     value="pct_change",
                                 ),
@@ -306,69 +341,99 @@ app.layout = html.Div(
                     ],
                     className="controls-row",
                 ),
-
                 # Deals table — outer div clips border-radius, inner div scrolls
                 html.Div(
-                  html.Div(
-                    dash_table.DataTable(
-                    id="deals-table",
-                    columns=TABLE_COLUMNS,
-                    hidden_columns=["pct_change"],
-                    export_format="none",
-                    style_table={"minWidth": "520px"},
-                    style_header={
-                        "backgroundColor": "white",
-                        "fontWeight": "500",
-                        "color": "#9ca3af",
-                        "fontSize": "11px",
-                        "textTransform": "uppercase",
-                        "letterSpacing": "0.06em",
-                        "border": "none",
-                        "borderBottom": "1px solid #e5e7eb",
-                        "padding": "11px 14px",
-                    },
-                    style_cell={
-                        "fontFamily": "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-                        "fontSize": "14px",
-                        "padding": "12px 14px",
-                        "textAlign": "left",
-                        "border": "none",
-                        "borderBottom": "1px solid #f3f4f6",
-                        "color": "#111827",
-                        "backgroundColor": "white",
-                        "whiteSpace": "normal",
-                    },
-                    style_cell_conditional=[
-                        {"if": {"column_id": "price_fmt"}, "textAlign": "right", "fontVariantNumeric": "tabular-nums"},
-                        {"if": {"column_id": "pct_fmt"},   "textAlign": "right", "fontVariantNumeric": "tabular-nums"},
-                        {"if": {"column_id": "buy_link"},  "textAlign": "center", "width": "80px"},
-                        {"if": {"column_id": "store"},     "color": "#6b7280", "fontSize": "13px"},
-                    ],
-                    style_data={"backgroundColor": "white"},
-                    style_data_conditional=TABLE_STYLE_CONDITIONAL,
-                    page_size=25,
-                    markdown_options={"link_target": "_blank"},
+                    html.Div(
+                        dash_table.DataTable(
+                            id="deals-table",
+                            columns=TABLE_COLUMNS,
+                            hidden_columns=["pct_change"],
+                            export_format="none",
+                            style_table={"minWidth": "520px"},
+                            style_header={
+                                "backgroundColor": "white",
+                                "fontWeight": "500",
+                                "color": "#9ca3af",
+                                "fontSize": "11px",
+                                "textTransform": "uppercase",
+                                "letterSpacing": "0.06em",
+                                "border": "none",
+                                "borderBottom": "1px solid #e5e7eb",
+                                "padding": "11px 14px",
+                            },
+                            style_cell={
+                                "fontFamily": "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                                "fontSize": "14px",
+                                "padding": "12px 14px",
+                                "textAlign": "left",
+                                "border": "none",
+                                "borderBottom": "1px solid #f3f4f6",
+                                "color": "#111827",
+                                "backgroundColor": "white",
+                                "whiteSpace": "normal",
+                            },
+                            style_cell_conditional=[
+                                {
+                                    "if": {"column_id": "price_fmt"},
+                                    "textAlign": "right",
+                                    "fontVariantNumeric": "tabular-nums",
+                                },
+                                {
+                                    "if": {"column_id": "pct_fmt"},
+                                    "textAlign": "right",
+                                    "fontVariantNumeric": "tabular-nums",
+                                },
+                                {
+                                    "if": {"column_id": "buy_link"},
+                                    "textAlign": "center",
+                                    "width": "80px",
+                                },
+                                {
+                                    "if": {"column_id": "store"},
+                                    "color": "#6b7280",
+                                    "fontSize": "13px",
+                                },
+                            ],
+                            style_data={"backgroundColor": "white"},
+                            style_data_conditional=TABLE_STYLE_CONDITIONAL,
+                            page_size=25,
+                            markdown_options={"link_target": "_blank"},
+                        ),
+                        style={"overflowX": "auto"},
                     ),
-                    style={"overflowX": "auto"},
-                  ),
-                  style={"border": "1px solid #e5e7eb", "borderRadius": "10px", "overflow": "hidden"},
+                    style={
+                        "border": "1px solid #e5e7eb",
+                        "borderRadius": "10px",
+                        "overflow": "hidden",
+                    },
                 ),
-
-                html.Hr(style={"border": "none", "borderTop": "1px solid #e5e7eb", "margin": "36px 0 24px"}),
-
+                html.Hr(
+                    style={
+                        "border": "none",
+                        "borderTop": "1px solid #e5e7eb",
+                        "margin": "36px 0 24px",
+                    }
+                ),
                 # History section
                 html.P(
                     "Price history",
-                    style={"fontSize": "15px", "fontWeight": "500", "color": "#111827", "margin": "0 0 12px"},
+                    style={
+                        "fontSize": "15px",
+                        "fontWeight": "500",
+                        "color": "#111827",
+                        "margin": "0 0 12px",
+                    },
                 ),
-
                 dcc.Dropdown(
                     id="product-dropdown",
                     value="All",
                     clearable=False,
-                    style={"fontSize": "14px", "maxWidth": "480px", "marginBottom": "16px"},
+                    style={
+                        "fontSize": "14px",
+                        "maxWidth": "480px",
+                        "marginBottom": "16px",
+                    },
                 ),
-
                 html.Div(
                     dcc.Graph(id="history-chart", config={"displayModeBar": False}),
                     style={
@@ -395,14 +460,14 @@ app.layout = html.Div(
 
 
 @app.callback(
-    Output("data-store",       "data"),
-    Output("last-updated",     "children"),
-    Output("kpi-best-deal",    "children"),
+    Output("data-store", "data"),
+    Output("last-updated", "children"),
+    Output("kpi-best-deal", "children"),
     Output("kpi-avg-discount", "children"),
-    Output("kpi-item-count",   "children"),
-    Output("store-filter",     "options"),
+    Output("kpi-item-count", "children"),
+    Output("store-filter", "options"),
     Output("product-dropdown", "options"),
-    Input("refresh-interval",  "n_intervals"),
+    Input("refresh-interval", "n_intervals"),
 )
 def refresh_data(_n):
     """Re-query the DB on load and every 10 minutes."""
@@ -410,26 +475,30 @@ def refresh_data(_n):
     df, report_date = fetch_current_data()
 
     from datetime import datetime
+
     today_pacific = datetime.now(ZoneInfo("America/Los_Angeles")).date()
-    date_part = "Today" if report_date.date() == today_pacific else report_date.strftime("%b %-d")
+    date_part = (
+        "Today"
+        if report_date.date() == today_pacific
+        else report_date.strftime("%b %-d")
+    )
     last_updated = f"↻  Updated {date_part} @ {report_date.strftime('%H:%M %Z')}"
 
-    best_deal    = df["pct_change"].min()
+    best_deal = df["pct_change"].min()
     avg_discount = df["pct_change"].mean()
-    item_count   = len(df)
+    item_count = len(df)
 
     store_options = [{"label": s, "value": s} for s in sorted(df["store"].unique())]
-    product_options = (
-        [{"label": "All products", "value": "All"}]
-        + [{"label": n, "value": n} for n in sorted(df["name"].unique())]
-    )
+    product_options = [{"label": "All products", "value": "All"}] + [
+        {"label": n, "value": n} for n in sorted(df["name"].unique())
+    ]
 
     return (
         df.to_json(date_format="iso", orient="split"),
         last_updated,
-        kpi_card("Best deal",      f"{best_deal:.1%}",    "#1d9e75"),
-        kpi_card("Avg vs 3-mo",    f"{avg_discount:.1%}", "#185fa5"),
-        kpi_card("Items tracked",  str(item_count),       "#111827"),
+        kpi_card("Best deal", f"{best_deal:.1%}", "#1d9e75"),
+        kpi_card("Avg vs 3-mo", f"{avg_discount:.1%}", "#185fa5"),
+        kpi_card("Items tracked", str(item_count), "#111827"),
         store_options,
         product_options,
     )
@@ -437,8 +506,8 @@ def refresh_data(_n):
 
 @app.callback(
     Output("deals-table", "data"),
-    Input("data-store",   "data"),
-    Input("sort-radio",   "value"),
+    Input("data-store", "data"),
+    Input("sort-radio", "value"),
     Input("store-filter", "value"),
 )
 def update_table(json_data, sort_col, stores):
@@ -460,9 +529,9 @@ def update_table(json_data, sort_col, stores):
 
 
 @app.callback(
-    Output("history-chart",   "figure"),
+    Output("history-chart", "figure"),
     Input("product-dropdown", "value"),
-    Input("data-store",       "data"),
+    Input("data-store", "data"),
 )
 def update_chart(product, json_data):
     """Reload price history when the product selection changes."""
@@ -504,8 +573,12 @@ def update_chart(product, json_data):
             "bordercolor": "#1a1f2e",
         },
     )
-    fig.update_traces(line_color="#378add", line_width=2, marker_color="#378add", marker_size=5)
-    fig.update_xaxes(showgrid=False, showline=True, linecolor="#e5e7eb", tickcolor="#e5e7eb")
+    fig.update_traces(
+        line_color="#378add", line_width=2, marker_color="#378add", marker_size=5
+    )
+    fig.update_xaxes(
+        showgrid=False, showline=True, linecolor="#e5e7eb", tickcolor="#e5e7eb"
+    )
     fig.update_yaxes(
         showgrid=True,
         gridcolor="#f3f4f6",
