@@ -76,6 +76,25 @@ write_files:
 
       echo "=== Setup Product Tracker Starting ==="
 
+      # Baked in at render time by envsubst
+      NTFY_TOPIC="${NTFY_TOPIC}"
+
+      # Send ntfy notification (best-effort — never fail the script)
+      ntfy_notify() {
+        local title="$1"
+        local msg="$2"
+        curl -s -o /dev/null \
+          -H "Title: ${title}" \
+          -H "Priority: default" \
+          -d "${msg}" \
+          "https://ntfy.sh/${NTFY_TOPIC}" || true
+      }
+
+      # Notify on unexpected failure
+      trap 'ntfy_notify "❌ Product Tracker Failed Setup" "Script failed at $(date -u)"' ERR
+
+      ntfy_notify "✅ Product Tracker Setup Done" "Started at $(date -u)"
+
       if [[ "$HOME" != "/home/kpasillas" ]]; then
         echo "ERROR: Incorrect HOME detected: $HOME"
         exit 1
