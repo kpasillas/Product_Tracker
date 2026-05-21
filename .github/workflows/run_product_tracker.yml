@@ -24,10 +24,9 @@ jobs:
           MYSQL_USERNAME: ${{ secrets.MYSQL_USERNAME }}
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
           MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
-          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: |
-          envsubst '${LINODE_TOKEN} ${MYSQL_USERNAME} ${MYSQL_PASSWORD} ${MYSQL_HOST} ${SENDGRID_API_KEY} ${NTFY_TOPIC}' \
+          envsubst '${LINODE_TOKEN} ${MYSQL_USERNAME} ${MYSQL_PASSWORD} ${MYSQL_HOST} ${NTFY_TOPIC}' \
             < cloud-init/cloud-init_template.yaml \
             > cloud-init/cloud-init.yaml
 
@@ -86,34 +85,3 @@ jobs:
             sleep 10
           done
           exit 1
-
-      # --------------------------------------------------
-      # 6. Wait for systemd completion
-      # --------------------------------------------------
-      # - name: Wait for run-product-tracker.service
-      #   run: |
-      #     echo "Waiting for run-product-tracker.service to complete..."
-
-      #     for i in {1..60}; do
-      #       echo "Attempt: $i"
-            
-      #       DONE=$(ssh -i /tmp/linode_ssh \
-      #         -o StrictHostKeyChecking=no \
-      #         root@$"$LINODE_IP" \
-      #         "[ -f /run/product-tracker/completed ] && echo yes || echo no")
-          
-      #       if [[ "$DONE" == "yes" ]]; then
-      #         echo "✅ run-product-tracker finished"
-      #         break
-      #       fi
-          
-      #       sleep 60
-      #     done
-
-      # --------------------------------------------------
-      # 7. Destroy Linode
-      # --------------------------------------------------
-      # - name: Destroy Linode
-      #   if: always()
-      #   run: |
-      #     linode-cli linodes delete "$LINODE_ID"
