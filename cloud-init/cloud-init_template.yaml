@@ -58,7 +58,6 @@ write_files:
       MYSQL_USERNAME="${MYSQL_USERNAME}"
       MYSQL_PASSWORD="${MYSQL_PASSWORD}"
       MYSQL_HOST="${MYSQL_HOST}"
-      SENDGRID_API_KEY="${SENDGRID_API_KEY}"
       NTFY_TOPIC="${NTFY_TOPIC}"
 
   - path: /usr/local/bin/setup-product-tracker.sh
@@ -93,7 +92,7 @@ write_files:
       # Notify on unexpected failure
       trap 'ntfy_notify "❌ Product Tracker Failed Setup" "Script failed at $(date -u)"' ERR
 
-      ntfy_notify "✅ Product Tracker Setup Done" "Started at $(date -u)"
+      ntfy_notify "✅ Product Tracker" "Started at $(date -u)"
 
       if [[ "$HOME" != "/home/kpasillas" ]]; then
         echo "ERROR: Incorrect HOME detected: $HOME"
@@ -206,8 +205,6 @@ write_files:
       touch /run/product-tracker/completed
 
       echo "🏁 Product tracker finished"
-
-      ntfy_notify "✅ Product Tracker Done" "Completed successfully at $(date -u)"
       
       echo "Fetching Linode metadata..."
 
@@ -222,8 +219,10 @@ write_files:
       if [[ -n "$LINODE_ID" ]]; then
         echo "Destroying Linode $LINODE_ID"
         linode-cli linodes delete "$LINODE_ID"
+        ntfy_notify "✅ Product Tracker" "Completed successfully at $(date -u)"
       else
         echo "ERROR: LINODE_ID not set — skipping self-destruction"
+        ntfy_notify "❌ Product Tracker" "Linode failed to self-destruct at $(date -u)"
       fi
 
   - path: /etc/systemd/system/run-product-tracker.service
