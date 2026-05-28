@@ -1,0 +1,17 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Handle: short upward-angled bar -->
+  <line x1="14" y1="20" x2="5" y2="13" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- Basket outline -->
+  <rect x="13" y="19" width="40" height="22" rx="3" stroke="white" stroke-width="3.5" fill="none"/>
+  <!-- Grid lines — inset ~4px from inner wall -->
+  <line x1="19" y1="26" x2="47" y2="26" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="19" y1="33" x2="47" y2="33" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="27" y1="24" x2="27" y2="37" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="40" y1="24" x2="40" y2="37" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Wheels -->
+  <circle cx="23" cy="52" r="5" stroke="white" stroke-width="2.5" fill="none"/>
+  <circle cx="45" cy="52" r="5" stroke="white" stroke-width="2.5" fill="none"/>
+  <!-- Wheel hubs (teal) -->
+  <circle cx="23" cy="52" r="2" fill="#1D9E75"/>
+  <circle cx="45" cy="52" r="2" fill="#1D9E75"/>
+</svg>

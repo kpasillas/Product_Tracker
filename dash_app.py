@@ -229,16 +229,16 @@ app.layout = html.Div(
                 [
                     html.Div(
                         [
-                            html.Span(
-                                "🛒", style={"fontSize": "36px", "marginRight": "12px"}
+                            html.Img(
+                                src="/assets/cart-icon.svg",
+                                style={"width": "38px", "height": "38px", "marginRight": "12px"},
                             ),
                             html.Span(
-                                "Deal Tracker",
-                                style={
-                                    "color": "#e8edf4",
-                                    "fontSize": "36px",
-                                    "fontWeight": "700",
-                                },
+                                [
+                                    html.Span("Deal", style={"color": "#1D9E75"}),
+                                    html.Span(" Tracker", style={"color": "#e8ede8"}),
+                                ],
+                                style={"fontSize": "36px", "fontWeight": "700"},
                             ),
                         ],
                         style={
@@ -267,7 +267,7 @@ app.layout = html.Div(
                 },
             ),
             style={
-                "background": "#1a1f2e",
+                "background": "#2C2C2A",
                 "height": "96px",
                 "display": "flex",
                 "alignItems": "center",
@@ -372,6 +372,12 @@ app.layout = html.Div(
                                 "backgroundColor": "white",
                                 "whiteSpace": "normal",
                             },
+                            style_header_conditional=[
+                                {
+                                    "if": {"column_id": "pct_fmt"},
+                                    "whiteSpace": "nowrap",
+                                },
+                            ],
                             style_cell_conditional=[
                                 {
                                     "if": {"column_id": "price_fmt"},
@@ -497,7 +503,7 @@ def refresh_data(_n):
         df.to_json(date_format="iso", orient="split"),
         last_updated,
         kpi_card("Best deal", f"{best_deal:.1%}", "#1d9e75"),
-        kpi_card("Avg vs 3-mo", f"{avg_discount:.1%}", "#185fa5"),
+        kpi_card("Avg vs 3-mo", f"{avg_discount:.1%}", "#2C2C2A"),
         kpi_card("Items tracked", str(item_count), "#111827"),
         store_options,
         product_options,
@@ -568,13 +574,13 @@ def update_chart(product, json_data):
         margin={"t": 20, "b": 40, "l": 55, "r": 20},
         legend={"title": "", "bgcolor": "rgba(0,0,0,0)", "font": {"color": "#6b7280"}},
         hoverlabel={
-            "bgcolor": "#1a1f2e",
-            "font_color": "#e8edf4",
-            "bordercolor": "#1a1f2e",
+            "bgcolor": "#2C2C2A",
+            "font_color": "#e8ede8",
+            "bordercolor": "#2C2C2A",
         },
     )
     fig.update_traces(
-        line_color="#378add", line_width=2, marker_color="#378add", marker_size=5
+        line_color="#1D9E75", line_width=2, marker_color="#1D9E75", marker_size=5
     )
     fig.update_xaxes(
         showgrid=False, showline=True, linecolor="#e5e7eb", tickcolor="#e5e7eb"
