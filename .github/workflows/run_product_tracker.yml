@@ -25,8 +25,9 @@ jobs:
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
           MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          TAILSCALE_AUTHKEY: ${{ secrets.TAILSCALE_AUTHKEY }}
         run: |
-          envsubst '${LINODE_TOKEN} ${MYSQL_USERNAME} ${MYSQL_PASSWORD} ${MYSQL_HOST} ${NTFY_TOPIC}' \
+          envsubst '${LINODE_TOKEN} ${MYSQL_USERNAME} ${MYSQL_PASSWORD} ${MYSQL_HOST} ${NTFY_TOPIC} ${TAILSCALE_AUTHKEY}' \
             < cloud-init/cloud-init_template.yaml \
             > cloud-init/cloud-init.yaml
 

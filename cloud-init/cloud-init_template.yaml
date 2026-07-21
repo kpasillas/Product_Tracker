@@ -99,6 +99,14 @@ write_files:
         exit 1
       fi
 
+      # Baked in at render time by envsubst
+      TAILSCALE_AUTHKEY="${TAILSCALE_AUTHKEY}"
+
+      echo "Install & connect Tailscale - Start"
+      curl -fsSL https://tailscale.com/install.sh | sh
+      tailscale up --authkey="${TAILSCALE_AUTHKEY}" --hostname="product-tracker-scraper"
+      echo "Install & connect Tailscale - Finish"
+
       echo "Build pyenv - Start"
       curl -fsSL https://pyenv.run | bash
       eval "$(pyenv init --path)"
