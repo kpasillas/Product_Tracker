@@ -104,7 +104,7 @@ write_files:
 
       echo "Install & connect Tailscale - Start"
       curl -fsSL https://tailscale.com/install.sh | sh
-      tailscale up --authkey="${TAILSCALE_AUTHKEY}" --hostname="product-tracker-scraper"
+      sudo tailscale up --authkey="${TAILSCALE_AUTHKEY}" --hostname="product-tracker-scraper"
       echo "Install & connect Tailscale - Finish"
 
       echo "Build pyenv - Start"
