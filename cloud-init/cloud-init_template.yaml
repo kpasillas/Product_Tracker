@@ -92,7 +92,7 @@ write_files:
       # Notify on unexpected failure
       trap 'ntfy_notify "❌ Product Tracker Failed Setup" "Script failed at $(date -u)"' ERR
 
-      ntfy_notify "✅ Product Tracker" "Started at $(date -u)"
+      ntfy_notify "🎬 Product Tracker" "Started at $(date -u)"
 
       if [[ "$HOME" != "/home/kpasillas" ]]; then
         echo "ERROR: Incorrect HOME detected: $HOME"
