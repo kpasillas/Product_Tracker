@@ -206,3 +206,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Claude Code — local only; the rest of .claude/ stays shareable
+.claude/settings.local.json
+.claude/launch.json
+.claude/worktrees/

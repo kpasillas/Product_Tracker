@@ -33,49 +33,47 @@ body {
 
 /* ---- Header ---- */
 
+/* Ink band — polarity flip. The colour change is the divider, so no hairline. */
 .hdr {
     flex: 0 0 auto;
-    padding: 16px 20px 12px;
-    border-bottom: 1px solid var(--hairline);
+    padding: 20px;
+    background: var(--ink);
+    color: var(--on-primary);
     display: flex;
     flex-direction: column;
-    gap: 10px;
-}
-
-.hdr-top {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 12px;
+    gap: 8px;
 }
 
 .wordmark {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
 }
 
 .wordmark img { display: block; flex: 0 0 auto; }
 
 .wordmark-text {
-    font-size: 20px;
+    font-size: 26px;
     font-weight: var(--weight-semibold);
-    letter-spacing: -0.4px;
-    color: var(--ink);
+    letter-spacing: -0.5px;
+    line-height: 30px;
+    color: var(--on-primary);
 }
 
 .updated {
     font-size: 12px;
     font-weight: var(--weight-caption);
-    color: var(--mute);
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--mute-soft);
     white-space: nowrap;
 }
 
 .summary {
-    margin: 0;
+    margin: 4px 0 0;
     font-size: 14px;
     line-height: 20px;
-    color: var(--body);
+    color: var(--hairline);
 }
 
 /* ---- Sort bar ---- */
