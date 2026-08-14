@@ -1,0 +1,24 @@
+:root{
+--space-xxs:2px;
+--space-xs:4px;
+--space-sm:8px;
+--space-md:12px;
+--space-lg:16px;
+--space-xl:20px;
+--space-2xl:24px;
+--space-3xl:32px;
+/* semantic */
+--pad-button:var(--space-md) var(--space-xl);
+--pad-input:var(--space-md) var(--space-lg);
+--pad-card:var(--space-3xl);
+--pad-badge:var(--space-xs) var(--space-sm);
+--pad-nav:var(--space-lg) var(--space-3xl);
+--pad-band:var(--space-3xl);
+--gutter-page:var(--space-3xl);
+--band-vertical:96px;
+--container-max:1280px;
+/* breakpoints (reference) */
+--bp-mobile-large:479px;
+--bp-tablet:768px;
+--bp-desktop:992px;
+}

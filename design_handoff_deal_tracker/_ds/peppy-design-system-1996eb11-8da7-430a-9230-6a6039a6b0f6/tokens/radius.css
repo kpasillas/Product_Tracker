@@ -1,0 +1,13 @@
+:root{
+--radius-none:0px;
+--radius-xs:2px;
+--radius-sm:4px;
+--radius-md:8px;
+--radius-full:9999px;
+/* semantic */
+--radius-button:var(--radius-sm);
+--radius-badge:var(--radius-sm);
+--radius-input:var(--radius-sm);
+--radius-card:var(--radius-md);
+--radius-icon-button:var(--radius-full);
+}
