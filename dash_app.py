@@ -1,604 +1,453 @@
 #!/usr/bin/env python3
+"""Deal Tracker — mobile-first price tracking screen.
+
+Layout follows design_handoff_deal_tracker/README.md (Peppy Design System).
+"""
+
+import time
+from datetime import date
+from zoneinfo import ZoneInfo
 
 import dash
-from dash import dcc, html, dash_table, Input, Output
-import plotly.express as px
 import pandas as pd
+from dash import Input, Output, dcc, html
 from sqlalchemy import text
-from zoneinfo import ZoneInfo
+
 from db.connection import get_mysql_engine
 
 # -------------------------
-# APP INIT
+# CONFIG
 # -------------------------
 
-app = dash.Dash(__name__, title="Deal Tracker")
+# What counts as a deal — "Well below avg" badge threshold.
+DEAL_THRESHOLD = 0.10
+CACHE_TTL_SECONDS = 600
+PACIFIC = ZoneInfo("America/Los_Angeles")
+
+INK = "#0b0b0d"
+MUTE_SOFT = "#acacac"
+HAIRLINE = "#dcdcdc"
+SUCCESS = "#12c94a"
+INFO = "#1668f0"
+
+# compress: the list is ~500KB of card markup; gzip takes it to ~10% of that.
+app = dash.Dash(__name__, title="Deal Tracker", update_title=None, compress=True)
 server = app.server  # expose for gunicorn / deployment
 
 engine = get_mysql_engine()
 
 
 # -------------------------
-# DATA FUNCTIONS
+# DATA
 # -------------------------
 
+HISTORY_QUERY = """
+    SELECT
+        price.product_id,
+        product.name,
+        product.store,
+        DATE(report.timestamp) AS date,
+        AVG(price.price)       AS price
+    FROM price
+    JOIN report  ON price.report_id  = report.id
+    JOIN product ON price.product_id = product.id
+    WHERE report.timestamp >= NOW() - INTERVAL 3 MONTH
+      AND price.price >= 0
+      AND price.product_id IN (
+          SELECT product_id FROM price
+          WHERE report_id = (SELECT id FROM report ORDER BY timestamp DESC LIMIT 1)
+            AND price >= 0
+      )
+    GROUP BY price.product_id, product.name, product.store, DATE(report.timestamp)
+    ORDER BY price.product_id, date
+"""
 
-def fetch_current_data():
-    """
-    Load the most recent report, current prices, and 3-month averages.
-    Returns (current_df, report_date).
-    """
+LATEST_REPORT_QUERY = text("SELECT timestamp FROM report ORDER BY timestamp DESC LIMIT 1")
 
-    report_query = text("""
-        SELECT report.id AS report_id, report.timestamp AS report_date, COUNT(*)
-        FROM price JOIN report ON price.report_id = report.id
-        WHERE report_id IN (
-            SELECT id FROM (
-                SELECT id
-                FROM report
-                ORDER BY timestamp DESC
-                LIMIT 2
-            ) AS latest_reports
-        )
-        GROUP BY report.id, report.timestamp
-        ORDER BY report.timestamp DESC
-    """)
+
+def money(v):
+    return f"${v:,.2f}"
+
+
+def pct(v):
+    return f"{v:+.1%}"
+
+
+def chart(vals, w, h, pad, avg=None):
+    """Port of the prototype's chart(): scale a series into SVG coordinates."""
+
+    if len(vals) < 2:
+        vals = vals * 2
+    lo, hi = min(vals), max(vals)
+    span = (hi - lo) or 1
+    n, top, bot = len(vals), pad, h - pad
+
+    def x(i):
+        return round(i * (w / (n - 1)), 1)
+
+    def y(v):
+        return round(bot - ((v - lo) / span) * (bot - top), 1)
+
+    return {
+        "points": " ".join(f"{x(i)},{y(v)}" for i, v in enumerate(vals)),
+        "low_x": x(vals.index(lo)), "low_y": y(lo),
+        "high_x": x(vals.index(hi)), "high_y": y(hi),
+        "last_x": x(n - 1), "last_y": y(vals[-1]),
+        "avg_y": y(lo) if avg is None else y(max(lo, min(hi, avg))),
+    }
+
+
+def badge_for(price, vs, low, high):
+    """Deal ladder — first match wins. Returns (label, tone, soft)."""
+
+    # A price that never moved ties its own low; that is not a deal.
+    if price <= low < high:
+        return "Lowest in 3 mo", "success", False
+    if vs <= -DEAL_THRESHOLD:
+        return "Well below avg", "info", True
+    if vs < -0.01:
+        return "Below avg", "neutral", True
+    if vs <= 0.01:
+        return "At average", "neutral", True
+    return "Above avg", "neutral", True
+
+
+def days_since_change(prices, dates):
+    """Days since the last price change in the window, or None if flat throughout."""
+
+    for i in range(len(prices) - 1, 0, -1):
+        if prices[i] != prices[i - 1]:
+            return (date.today() - dates[i]).days
+    return None
+
+
+def relative_days(days):
+    if days is None:
+        return "3 mo+"
+    if days == 0:
+        return "Today"
+    if days == 1:
+        return "1 day ago"
+    return f"{days} days ago"
+
+
+def product_url(store, product_id):
+    if store == "Amazon":
+        return f"https://www.amazon.com/dp/{product_id}"
+    return f"https://www.cheapcharts.com/us/itunes/movies/{product_id}"
+
+
+def build_rows():
+    """One query per refresh; everything else is derived here."""
+
+    df = pd.read_sql(HISTORY_QUERY, engine)
+    df["price"] = df["price"].astype(float)
 
     with engine.begin() as conn:
-        row = conn.execute(report_query).first()
+        report_date = conn.execute(LATEST_REPORT_QUERY).scalar()
+    updated = report_date.replace(tzinfo=ZoneInfo("UTC")).astimezone(PACIFIC)
 
-    report_id = row.report_id
-    report_date = row.report_date.replace(tzinfo=ZoneInfo("UTC")).astimezone(
-        ZoneInfo("America/Los_Angeles")
+    rows = []
+    for (product_id, name, store), g in df.groupby(
+        ["product_id", "name", "store"], sort=False
+    ):
+        prices = g["price"].tolist()
+        dates = g["date"].tolist()
+        price = prices[-1]
+        avg = sum(prices) / len(prices)
+        vs = (price - avg) / avg if avg else 0.0
+        low, high = min(prices), max(prices)
+        label, tone, soft = badge_for(price, vs, low, high)
+        big = chart(prices, 326, 110, 8, avg)
+        spark = chart(prices, 88, 26, 4)
+
+        rows.append({
+            "id": product_id, "name": name, "store": store,
+            "price": price, "vs": vs, "avg": avg, "low": low, "high": high,
+            "low_date": dates[prices.index(low)],
+            "high_date": dates[prices.index(high)],
+            "badge": label, "tone": tone, "soft": soft,
+            "changed": relative_days(days_since_change(prices, dates)),
+            "url": product_url(store, product_id),
+            "cta": f"Buy on {store}" if store == "Amazon" else f"View on {store}",
+            "big": big, "spark": spark,
+        })
+
+    rows.sort(key=lambda r: r["vs"])
+    return rows, updated
+
+
+_cache = {"at": 0.0, "value": None}
+
+
+def load():
+    # ponytail: process-local TTL cache. Move to flask-caching if this ever runs
+    # on more than the single gunicorn worker it runs on today.
+    if _cache["value"] is None or time.time() - _cache["at"] > CACHE_TTL_SECONDS:
+        _cache["value"] = build_rows()
+        _cache["at"] = time.time()
+    return _cache["value"]
+
+
+# -------------------------
+# RENDERING
+# -------------------------
+
+
+def svg_img(markup, w, h, alt, class_name=None):
+    """Inline SVG as a data URI — Dash has no SVG components.
+
+    Encodes only what a data URI in an attribute cannot carry raw; full
+    percent-encoding would triple the size of the coordinate lists.
+    """
+
+    encoded = (
+        markup.replace("%", "%25")
+        .replace("#", "%23")
+        .replace("<", "%3C")
+        .replace(">", "%3E")
+        .replace('"', "'")
+        .replace("&", "%26")
+    )
+    return html.Img(
+        src="data:image/svg+xml," + encoded,
+        width=w, height=h, alt=alt, className=class_name,
     )
 
-    current_query = f"""
-        SELECT
-            product.id  AS product_id,
-            name,
-            price       AS price_num,
-            store
-        FROM price
-        JOIN product ON price.product_id = product.id
-        WHERE report_id = "{report_id}"
-            AND price >= 0
-    """
-    current_df = pd.read_sql(current_query, engine)
 
-    avg_query = """
-        SELECT product_id, ROUND(AVG(price), 2) AS avg_price_num
-        FROM price
-        WHERE report_id IN (
-            SELECT id FROM report WHERE timestamp >= NOW() - INTERVAL 3 MONTH
-        )
-        GROUP BY product_id
-    """
-    avg_df = pd.read_sql(avg_query, engine).set_index("product_id")
-    current_df = current_df.join(avg_df, on="product_id")
-
-    # Derived metrics
-    current_df["pct_change"] = (
-        current_df["price_num"] - current_df["avg_price_num"]
-    ) / current_df["avg_price_num"]
-    current_df["price_fmt"] = current_df["price_num"].map("${:,.2f}".format)
-    current_df["pct_fmt"] = current_df["pct_change"].map("{:+.1%}".format)
-
-    # Store-aware buy link
-    def buy_link(row):
-        if row["store"] == "Amazon":
-            url = f"https://www.amazon.com/dp/{row['product_id']}"
-            return f"[Buy]({url})"
-        else:
-            url = f"https://www.cheapcharts.com/us/itunes/movies/{row['product_id']}"
-            return f"[View]({url})"
-
-    current_df["buy_link"] = current_df.apply(buy_link, axis=1)
-
-    return current_df, report_date
+CART_SVG = (
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-2 -2 68 68" width="24" height="24"'
+    f' fill="none" stroke="{INK}" stroke-width="4" stroke-linecap="round">'
+    '<line x1="14" y1="20" x2="5" y2="13"/>'
+    '<rect x="13" y="19" width="40" height="22" rx="3"/>'
+    '<line x1="27" y1="24" x2="27" y2="36" stroke-width="2.5"/>'
+    '<line x1="40" y1="24" x2="40" y2="36" stroke-width="2.5"/>'
+    '<circle cx="23" cy="52" r="5" stroke-width="3.5"/>'
+    '<circle cx="45" cy="52" r="5" stroke-width="3.5"/>'
+    "</svg>"
+)
 
 
-def fetch_history(product_name, product_id_list):
-    """
-    Load price history for one product or an aggregate of all products.
-    """
-
-    if product_name and product_name != "All":
-        query = f"""
-            SELECT DATE(timestamp) AS date, name, AVG(price) AS price
-            FROM price
-            JOIN product ON price.product_id = product.id
-            JOIN report  ON price.report_id  = report.id
-            WHERE product.name = "{product_name}"
-              AND price >= 0
-            GROUP BY DATE(timestamp), name
-        """
-    else:
-        ids = tuple(product_id_list)
-        if not ids:
-            return pd.DataFrame(columns=["date", "price"])
-        ids_sql = f"('{ids[0]}')" if len(ids) == 1 else str(ids)
-        query = f"""
-            SELECT DATE(timestamp) AS date, AVG(price) AS price
-            FROM price
-            JOIN product ON price.product_id = product.id
-            JOIN report  ON price.report_id  = report.id
-            WHERE product.id IN {ids_sql}
-              AND price >= 0
-            GROUP BY DATE(timestamp)
-            ORDER BY DATE(timestamp)
-        """
-
-    df = pd.read_sql(query, engine)
-    df["date"] = pd.to_datetime(df["date"])
-
-    # Ensure "all products" path returns a single averaged series (one row per date)
-    if not (product_name and product_name != "All"):
-        df = df.groupby("date", as_index=False)["price"].mean()
-
-    return df
+def spark_svg(c):
+    # Padded viewBox stands in for the prototype's overflow:visible (an <img> clips).
+    return (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-3 -3 94 32" width="94" height="32">'
+        f'<polyline points="{c["points"]}" fill="none" stroke="{INK}" stroke-width="1.5"/>'
+        f'<circle cx="{c["last_x"]}" cy="{c["last_y"]}" r="2.5" fill="{INK}"/>'
+        "</svg>"
+    )
 
 
-# -------------------------
-# HELPERS
-# -------------------------
+def history_svg(c):
+    return (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-5 -5 336 120" width="336" height="120">'
+        f'<line x1="0" y1="{c["avg_y"]}" x2="326" y2="{c["avg_y"]}"'
+        f' stroke="{HAIRLINE}" stroke-width="1" stroke-dasharray="3 3"/>'
+        f'<polyline points="{c["points"]}" fill="none" stroke="{INK}" stroke-width="1.5"/>'
+        f'<circle cx="{c["high_x"]}" cy="{c["high_y"]}" r="3.5" fill="{MUTE_SOFT}"/>'
+        f'<circle cx="{c["low_x"]}" cy="{c["low_y"]}" r="3.5" fill="{SUCCESS}"/>'
+        f'<circle cx="{c["last_x"]}" cy="{c["last_y"]}" r="4" fill="{INK}"/>'
+        "</svg>"
+    )
 
 
-def kpi_card(label, value, color="#111827"):
+def stat(label, value):
     return html.Div(
-        [
-            html.P(
-                label,
-                className="kpi-label",
-                style={
-                    "fontSize": "11px",
-                    "color": "#9ca3af",
-                    "margin": "0 0 8px",
-                    "textTransform": "uppercase",
-                    "letterSpacing": "0.07em",
-                    "fontWeight": "500",
-                },
-            ),
-            html.P(
-                value,
-                className="kpi-value",
-                style={
-                    "fontSize": "28px",
-                    "fontWeight": "500",
-                    "color": color,
-                    "margin": 0,
-                    "lineHeight": 1,
-                },
-            ),
-        ],
-        style={
-            "background": "white",
-            "borderRadius": "10px",
-            "padding": "18px 20px",
-            "border": "1px solid #e5e7eb",
-        },
+        [html.Span(label, className="stat-label"), html.Span(value, className="stat-value")],
+        className="stat",
     )
 
 
-# -------------------------
-# TABLE CONFIG
-# -------------------------
-
-TABLE_COLUMNS = [
-    {"name": "Product", "id": "name", "type": "text"},
-    {"name": "Price", "id": "price_fmt", "type": "text"},
-    {"name": "vs 3-mo avg", "id": "pct_fmt", "type": "text"},
-    {"name": "Store", "id": "store", "type": "text"},
-    {"name": "", "id": "buy_link", "type": "text", "presentation": "markdown"},
-    {"name": "", "id": "pct_change", "type": "numeric"},  # hidden; drives row coloring
-]
-
-TABLE_STYLE_CONDITIONAL = [
-    # Alternating rows
-    {"if": {"row_index": "odd"}, "backgroundColor": "#f9fafb"},
-    # pct_fmt color-coding using the hidden pct_change column
-    {
-        "if": {"filter_query": "{pct_change} < -0.15", "column_id": "pct_fmt"},
-        "color": "#1d9e75",
-        "fontWeight": "500",
-    },
-    {
-        "if": {
-            "filter_query": "{pct_change} >= -0.15 and {pct_change} < 0",
-            "column_id": "pct_fmt",
-        },
-        "color": "#2563eb",
-    },
-    {
-        "if": {"filter_query": "{pct_change} >= 0", "column_id": "pct_fmt"},
-        "color": "#9ca3af",
-    },
-]
+def legend_item(color, label):
+    return html.Span(
+        [html.Span(className="dot", style={"background": color}), label],
+        className="legend-item",
+    )
 
 
-# -------------------------
-# LAYOUT
-# -------------------------
-
-app.layout = html.Div(
-    [
-        dcc.Interval(id="refresh-interval", interval=10 * 60 * 1000, n_intervals=0),
-        dcc.Store(id="data-store"),
-        # --- Dark header ---
-        html.Div(
-            html.Div(
+def card(row, is_open):
+    fmt_date = "%-d %b"
+    return html.Details(
+        [
+            html.Summary(
                 [
                     html.Div(
                         [
-                            html.Img(
-                                src="/assets/cart-icon.svg",
-                                style={"width": "38px", "height": "38px", "marginRight": "12px"},
-                            ),
-                            html.Span(
+                            html.Span(row["name"], className="name"),
+                            html.Div(
                                 [
-                                    html.Span("Deal", style={"color": "#1D9E75"}),
-                                    html.Span(" Tracker", style={"color": "#e8ede8"}),
+                                    html.Span(row["store"], className="store"),
+                                    html.Span(
+                                        row["badge"],
+                                        className=f"badge badge-{row['tone']}"
+                                        + (" badge-soft" if row["soft"] else ""),
+                                    ),
                                 ],
-                                style={"fontSize": "36px", "fontWeight": "700"},
+                                className="meta",
                             ),
                         ],
-                        style={
-                            "display": "flex",
-                            "alignItems": "center",
-                            "marginBottom": "6px",
-                        },
+                        className="card-left",
                     ),
-                    html.Span(
-                        id="last-updated",
-                        style={
-                            "fontSize": "12px",
-                            "color": "#6b7a99",
-                            "paddingLeft": "4px",
-                        },
+                    html.Div(
+                        [
+                            html.Span(money(row["price"]), className="price"),
+                            svg_img(spark_svg(row["spark"]), 94, 32, "", "spark"),
+                        ],
+                        className="card-right",
                     ),
                 ],
-                style={
-                    "display": "flex",
-                    "flexDirection": "column",
-                    "justifyContent": "center",
-                    "maxWidth": "1100px",
-                    "width": "100%",
-                    "margin": "0 auto",
-                    "padding": "0 28px",
-                },
+                className="card-top",
             ),
-            style={
-                "background": "#2C2C2A",
-                "height": "96px",
-                "display": "flex",
-                "alignItems": "center",
-                "position": "fixed",
-                "top": "0",
-                "left": "0",
-                "right": "0",
-                "zIndex": "1000",
-            },
-        ),
-        # --- Main content ---
-        html.Div(
-            [
-                # KPI row
-                html.Div(
-                    [
-                        html.Div(id="kpi-best-deal"),
-                        html.Div(id="kpi-avg-discount"),
-                        html.Div(id="kpi-item-count"),
-                    ],
-                    className="kpi-grid",
-                ),
-                html.Hr(
-                    style={
-                        "border": "none",
-                        "borderTop": "1px solid #e5e7eb",
-                        "margin": "0 0 24px",
-                    }
-                ),
-                # Section title
-                html.P(
-                    "Best deals right now",
-                    style={
-                        "fontSize": "15px",
-                        "fontWeight": "500",
-                        "color": "#111827",
-                        "margin": "0 0 14px",
-                    },
-                ),
-                # Controls row
-                html.Div(
-                    [
-                        html.Div(
-                            [
-                                html.Span(
-                                    "Sort by",
-                                    style={
-                                        "fontSize": "13px",
-                                        "color": "#9ca3af",
-                                        "marginRight": "10px",
-                                    },
-                                ),
-                                dcc.RadioItems(
-                                    id="sort-radio",
-                                    options=[
-                                        {"label": "Discount", "value": "pct_change"},
-                                        {"label": "Price", "value": "price_num"},
-                                    ],
-                                    value="pct_change",
-                                ),
-                            ],
-                            style={"display": "flex", "alignItems": "center"},
-                        ),
-                        dcc.Dropdown(
-                            id="store-filter",
-                            placeholder="All stores",
-                            multi=True,
-                            className="store-filter-dropdown",
-                            style={"fontSize": "13px"},
-                        ),
-                    ],
-                    className="controls-row",
-                ),
-                # Deals table — outer div clips border-radius, inner div scrolls
-                html.Div(
-                    html.Div(
-                        dash_table.DataTable(
-                            id="deals-table",
-                            columns=TABLE_COLUMNS,
-                            hidden_columns=["pct_change"],
-                            export_format="none",
-                            style_table={"minWidth": "520px"},
-                            style_header={
-                                "backgroundColor": "white",
-                                "fontWeight": "500",
-                                "color": "#9ca3af",
-                                "fontSize": "11px",
-                                "textTransform": "uppercase",
-                                "letterSpacing": "0.06em",
-                                "border": "none",
-                                "borderBottom": "1px solid #e5e7eb",
-                                "padding": "11px 14px",
-                            },
-                            style_cell={
-                                "fontFamily": "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-                                "fontSize": "14px",
-                                "padding": "12px 14px",
-                                "textAlign": "left",
-                                "border": "none",
-                                "borderBottom": "1px solid #f3f4f6",
-                                "color": "#111827",
-                                "backgroundColor": "white",
-                                "whiteSpace": "normal",
-                            },
-                            style_header_conditional=[
-                                {
-                                    "if": {"column_id": "pct_fmt"},
-                                    "whiteSpace": "nowrap",
-                                },
-                            ],
-                            style_cell_conditional=[
-                                {
-                                    "if": {"column_id": "price_fmt"},
-                                    "textAlign": "right",
-                                    "fontVariantNumeric": "tabular-nums",
-                                },
-                                {
-                                    "if": {"column_id": "pct_fmt"},
-                                    "textAlign": "right",
-                                    "fontVariantNumeric": "tabular-nums",
-                                },
-                                {
-                                    "if": {"column_id": "buy_link"},
-                                    "textAlign": "center",
-                                    "width": "80px",
-                                },
-                                {
-                                    "if": {"column_id": "store"},
-                                    "color": "#6b7280",
-                                    "fontSize": "13px",
-                                },
-                            ],
-                            style_data={"backgroundColor": "white"},
-                            style_data_conditional=TABLE_STYLE_CONDITIONAL,
-                            page_size=25,
-                            markdown_options={"link_target": "_blank"},
-                        ),
-                        style={"overflowX": "auto"},
+            html.Div(
+                [
+                    svg_img(
+                        history_svg(row["big"]), 336, 120,
+                        f"3-month price history for {row['name']}", "history",
                     ),
-                    style={
-                        "border": "1px solid #e5e7eb",
-                        "borderRadius": "10px",
-                        "overflow": "hidden",
-                    },
-                ),
-                html.Hr(
-                    style={
-                        "border": "none",
-                        "borderTop": "1px solid #e5e7eb",
-                        "margin": "36px 0 24px",
-                    }
-                ),
-                # History section
-                html.P(
-                    "Price history",
-                    style={
-                        "fontSize": "15px",
-                        "fontWeight": "500",
-                        "color": "#111827",
-                        "margin": "0 0 12px",
-                    },
-                ),
-                dcc.Dropdown(
-                    id="product-dropdown",
-                    value="All",
-                    clearable=False,
-                    style={
-                        "fontSize": "14px",
-                        "maxWidth": "480px",
-                        "marginBottom": "16px",
-                    },
-                ),
-                html.Div(
-                    dcc.Graph(id="history-chart", config={"displayModeBar": False}),
-                    style={
-                        "background": "white",
-                        "border": "1px solid #e5e7eb",
-                        "borderRadius": "10px",
-                        "overflow": "hidden",
-                    },
-                ),
-            ],
-            style={
-                "maxWidth": "1100px",
-                "margin": "0 auto",
-                "padding": "116px 28px 60px",
-            },
-        ),
-    ]
-)
+                    html.Div(
+                        [
+                            legend_item(
+                                SUCCESS,
+                                f"Low {money(row['low'])} · {row['low_date'].strftime(fmt_date)}",
+                            ),
+                            legend_item(
+                                MUTE_SOFT,
+                                f"High {money(row['high'])} · {row['high_date'].strftime(fmt_date)}",
+                            ),
+                        ],
+                        className="legend",
+                    ),
+                    html.Div(
+                        [
+                            stat("3-mo avg", money(row["avg"])),
+                            stat("vs avg", pct(row["vs"])),
+                            stat("Changed", row["changed"]),
+                        ],
+                        className="stats",
+                    ),
+                    html.A(
+                        row["cta"], href=row["url"], target="_blank",
+                        rel="noopener noreferrer", className="cta",
+                    ),
+                ],
+                className="detail",
+            ),
+        ],
+        className="card",
+        open=is_open,
+    )
 
 
-# -------------------------
-# CALLBACKS
-# -------------------------
+def headline(rows):
+    if not rows:
+        return "No tracked prices yet."
+
+    # Counts what the sentence says: below average, not just the two strongest badges.
+    deals = sum(1 for r in rows if r["vs"] < -0.01)
+    best = rows[0]
+    short = best["name"].split(":")[0].strip()
+    if len(short) > 42:
+        short = short[:42].rstrip() + "…"
+    if best["badge"] == "Lowest in 3 mo":
+        tail = f"{short} is at its lowest price in 3 months."
+    else:
+        tail = f"{short} is {abs(best['vs']):.1%} below its average."
+    return f"{deals} of {len(rows)} items are below their 3-month average. {tail}"
+
+
+def serve_layout():
+    rows, updated = load()
+    stores = ["All stores"] + sorted({r["store"] for r in rows})
+
+    return html.Div(
+        [
+            html.Header(
+                [
+                    html.Div(
+                        [
+                            html.Span(
+                                [
+                                    svg_img(CART_SVG, 24, 24, ""),
+                                    html.Span("Deal Tracker", className="wordmark-text"),
+                                ],
+                                className="wordmark",
+                            ),
+                            html.Span(
+                                f"Updated {updated.strftime('%H:%M')}", className="updated"
+                            ),
+                        ],
+                        className="hdr-top",
+                    ),
+                    html.P(headline(rows), className="summary"),
+                ],
+                className="hdr",
+            ),
+            html.Div(
+                [
+                    dcc.RadioItems(
+                        id="sort",
+                        options=[
+                            {"label": "Deal", "value": "deal"},
+                            {"label": "Price", "value": "price"},
+                        ],
+                        value="deal",
+                        className="segmented",
+                    ),
+                    html.Span(id="count", className="count"),
+                ],
+                className="sortbar",
+            ),
+            dcc.RadioItems(
+                id="store",
+                options=stores,
+                value="All stores",
+                className="chips scroll",
+            ),
+            html.Div(id="deal-list", className="list scroll"),
+        ],
+        className="app",
+    )
+
+
+app.layout = serve_layout
 
 
 @app.callback(
-    Output("data-store", "data"),
-    Output("last-updated", "children"),
-    Output("kpi-best-deal", "children"),
-    Output("kpi-avg-discount", "children"),
-    Output("kpi-item-count", "children"),
-    Output("store-filter", "options"),
-    Output("product-dropdown", "options"),
-    Input("refresh-interval", "n_intervals"),
+    Output("deal-list", "children"),
+    Output("count", "children"),
+    Input("sort", "value"),
+    Input("store", "value"),
 )
-def refresh_data(_n):
-    """Re-query the DB on load and every 10 minutes."""
+def render_list(sort, store):
+    # ponytail: server round-trip per sort/filter tap. Cards are prebuilt from the
+    # cached rows, so it is one render; go clientside only if it ever feels slow.
+    rows, _ = load()
+    shown = [r for r in rows if store == "All stores" or r["store"] == store]
+    shown.sort(key=lambda r: r["price"] if sort == "price" else r["vs"])
 
-    df, report_date = fetch_current_data()
+    count = f"{len(rows)} tracked" if store == "All stores" else f"{len(shown)} of {len(rows)}"
 
-    from datetime import datetime
+    if not shown:
+        next_step = (
+            "Run the tracker to collect prices."
+            if not rows
+            else "Pick another store to see current deals."
+        )
+        return (
+            html.Div(
+                [
+                    html.P("Nothing to show yet.", className="empty-title"),
+                    html.P(next_step, className="empty-body"),
+                ],
+                className="empty",
+            ),
+            count,
+        )
 
-    today_pacific = datetime.now(ZoneInfo("America/Los_Angeles")).date()
-    date_part = (
-        "Today"
-        if report_date.date() == today_pacific
-        else report_date.strftime("%b %-d")
-    )
-    last_updated = f"↻  Updated {date_part} @ {report_date.strftime('%H:%M %Z')}"
+    # Best deal starts expanded on load; changing sort or store collapses everything.
+    open_first = dash.ctx.triggered_id is None
+    return [card(r, open_first and i == 0) for i, r in enumerate(shown)], count
 
-    best_deal = df["pct_change"].min()
-    avg_discount = df["pct_change"].mean()
-    item_count = len(df)
-
-    store_options = [{"label": s, "value": s} for s in sorted(df["store"].unique())]
-    product_options = [{"label": "All products", "value": "All"}] + [
-        {"label": n, "value": n} for n in sorted(df["name"].unique())
-    ]
-
-    return (
-        df.to_json(date_format="iso", orient="split"),
-        last_updated,
-        kpi_card("Best deal", f"{best_deal:.1%}", "#1d9e75"),
-        kpi_card("Avg vs 3-mo", f"{avg_discount:.1%}", "#2C2C2A"),
-        kpi_card("Items tracked", str(item_count), "#111827"),
-        store_options,
-        product_options,
-    )
-
-
-@app.callback(
-    Output("deals-table", "data"),
-    Input("data-store", "data"),
-    Input("sort-radio", "value"),
-    Input("store-filter", "value"),
-)
-def update_table(json_data, sort_col, stores):
-    """Re-sort and re-filter the deals table."""
-
-    if not json_data:
-        return []
-
-    df = pd.read_json(json_data, orient="split")
-
-    if stores:
-        df = df[df["store"].isin(stores)]
-
-    # Ascending: cheapest price first, or most-discounted (most-negative) first
-    df = df.sort_values(sort_col, ascending=True)
-
-    cols = ["name", "price_fmt", "pct_fmt", "store", "buy_link", "pct_change"]
-    return df[cols].to_dict("records")
-
-
-@app.callback(
-    Output("history-chart", "figure"),
-    Input("product-dropdown", "value"),
-    Input("data-store", "data"),
-)
-def update_chart(product, json_data):
-    """Reload price history when the product selection changes."""
-
-    if not json_data:
-        return {}
-
-    # Treat blank/None dropdown as "All"
-    if not product:
-        product = "All"
-
-    df = pd.read_json(json_data, orient="split")
-    pid_list = df["product_id"].tolist()
-
-    history_df = fetch_history(product_name=product, product_id_list=pid_list)
-
-    if history_df.empty:
-        return px.line(title="No history available")
-
-    fig = px.line(history_df, x="date", y="price", markers=True)
-
-    fig.update_layout(
-        title=None,
-        xaxis_title=None,
-        yaxis_title=None,
-        hovermode="x unified",
-        plot_bgcolor="white",
-        paper_bgcolor="white",
-        font={
-            "family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-            "size": 12,
-            "color": "#9ca3af",
-        },
-        margin={"t": 20, "b": 40, "l": 55, "r": 20},
-        legend={"title": "", "bgcolor": "rgba(0,0,0,0)", "font": {"color": "#6b7280"}},
-        hoverlabel={
-            "bgcolor": "#2C2C2A",
-            "font_color": "#e8ede8",
-            "bordercolor": "#2C2C2A",
-        },
-    )
-    fig.update_traces(
-        line_color="#1D9E75", line_width=2, marker_color="#1D9E75", marker_size=5
-    )
-    fig.update_xaxes(
-        showgrid=False, showline=True, linecolor="#e5e7eb", tickcolor="#e5e7eb"
-    )
-    fig.update_yaxes(
-        showgrid=True,
-        gridcolor="#f3f4f6",
-        tickprefix="$",
-        zeroline=False,
-        tickcolor="#e5e7eb",
-    )
-
-    return fig
-
-
-# -------------------------
-# ENTRY POINT
-# -------------------------
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, dev_tools_ui=False)
