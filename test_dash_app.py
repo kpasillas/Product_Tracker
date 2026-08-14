@@ -3,7 +3,14 @@
 
 from datetime import date, timedelta
 
-from dash_app import badge_for, chart, days_since_change, headline, relative_days
+from dash_app import (
+    available_series,
+    badge_for,
+    chart,
+    days_since_change,
+    headline,
+    relative_days,
+)
 
 
 def test_chart_scales_series_into_the_box():
@@ -38,6 +45,18 @@ def test_days_since_change():
     assert relative_days(1) == "1 day ago"
     assert relative_days(0) == "Today"
     assert relative_days(None) == "3 mo+"
+
+
+def test_available_series():
+    days = [date.today() - timedelta(days=n) for n in (2, 1, 0)]
+
+    # A gap mid-history is dropped; the item stays on the list.
+    assert available_series([5.0, -1.0, 4.0], days) == ([5.0, 4.0], [days[0], days[2]])
+    # Unavailable right now: off the list.
+    assert available_series([5.0, 4.0, -1.0], days) is None
+    assert available_series([], []) is None
+    # Not yet scraped in a running report — yesterday's price still shows.
+    assert available_series([5.0, 4.0], days[:2]) == ([5.0, 4.0], days[:2])
 
 
 def test_headline():

@@ -41,28 +41,38 @@ engine = get_mysql_engine()
 # DATA
 # -------------------------
 
+# The tracked set is the `product` table, and each product's current price is its
+# own most recent one — never "whatever is in the newest report". The tracker
+# inserts the report row before it starts scraping, so keying off the newest
+# report empties the screen for the length of a run.
 HISTORY_QUERY = """
-    SELECT
-        price.product_id,
-        product.name,
-        product.store,
-        DATE(report.timestamp) AS date,
-        AVG(price.price)       AS price
-    FROM price
-    JOIN report  ON price.report_id  = report.id
-    JOIN product ON price.product_id = product.id
-    WHERE report.timestamp >= NOW() - INTERVAL 3 MONTH
-      AND price.price >= 0
-      AND price.product_id IN (
-          SELECT product_id FROM price
-          WHERE report_id = (SELECT id FROM report ORDER BY timestamp DESC LIMIT 1)
-            AND price >= 0
-      )
-    GROUP BY price.product_id, product.name, product.store, DATE(report.timestamp)
-    ORDER BY price.product_id, date
+    SELECT product_id, name, store, date, price
+    FROM (
+        SELECT
+            price.product_id,
+            product.name,
+            product.store,
+            DATE(report.timestamp) AS date,
+            price.price,
+            ROW_NUMBER() OVER (
+                PARTITION BY price.product_id, DATE(report.timestamp)
+                ORDER BY report.timestamp DESC
+            ) AS rn
+        FROM price
+        JOIN report  ON price.report_id  = report.id
+        JOIN product ON price.product_id = product.id
+        WHERE report.timestamp >= NOW() - INTERVAL 3 MONTH
+    ) daily
+    WHERE rn = 1
+    ORDER BY product_id, date
 """
 
-LATEST_REPORT_QUERY = text("SELECT timestamp FROM report ORDER BY timestamp DESC LIMIT 1")
+# Newest report that actually carries prices — mid-run that is the run in progress.
+LATEST_PRICE_QUERY = text("""
+    SELECT MAX(report.timestamp)
+    FROM report
+    JOIN price ON price.report_id = report.id
+""")
 
 
 def money(v):
@@ -131,6 +141,20 @@ def relative_days(days):
     return f"{days} days ago"
 
 
+def available_series(prices, dates):
+    """Drop the days a store quoted no price (negative).
+
+    Returns None when the most recent day is one of them — the item is
+    unavailable right now, so it leaves the list. An item that simply has not
+    been scraped yet in a running report keeps its last known price instead.
+    """
+
+    if not prices or prices[-1] < 0:
+        return None
+    kept = [(p, d) for p, d in zip(prices, dates) if p >= 0]
+    return [p for p, _ in kept], [d for _, d in kept]
+
+
 def product_url(store, product_id):
     if store == "Amazon":
         return f"https://www.amazon.com/dp/{product_id}"
@@ -144,15 +168,18 @@ def build_rows():
     df["price"] = df["price"].astype(float)
 
     with engine.begin() as conn:
-        report_date = conn.execute(LATEST_REPORT_QUERY).scalar()
+        report_date = conn.execute(LATEST_PRICE_QUERY).scalar()
     updated = report_date.replace(tzinfo=ZoneInfo("UTC")).astimezone(PACIFIC)
 
     rows = []
     for (product_id, name, store), g in df.groupby(
         ["product_id", "name", "store"], sort=False
     ):
-        prices = g["price"].tolist()
-        dates = g["date"].tolist()
+        series = available_series(g["price"].tolist(), g["date"].tolist())
+        if series is None:
+            continue
+
+        prices, dates = series
         price = prices[-1]
         avg = sum(prices) / len(prices)
         vs = (price - avg) / avg if avg else 0.0
