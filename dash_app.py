@@ -25,6 +25,7 @@ CACHE_TTL_SECONDS = 600
 PACIFIC = ZoneInfo("America/Los_Angeles")
 
 INK = "#0b0b0d"
+ON_INK = "#ffffff"
 MUTE_SOFT = "#acacac"
 HAIRLINE = "#dcdcdc"
 SUCCESS = "#12c94a"
@@ -242,9 +243,11 @@ def svg_img(markup, w, h, alt, class_name=None):
     )
 
 
+# Drawn on the ink band, so the stroke is baked white — a data-URI <img> can't
+# inherit currentColor the way the prototype's inline SVG does.
 CART_SVG = (
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-2 -2 68 68" width="24" height="24"'
-    f' fill="none" stroke="{INK}" stroke-width="4" stroke-linecap="round">'
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-2 -2 68 68" width="30" height="30"'
+    f' fill="none" stroke="{ON_INK}" stroke-width="4" stroke-linecap="round">'
     '<line x1="14" y1="20" x2="5" y2="13"/>'
     '<rect x="13" y="19" width="40" height="22" rx="3"/>'
     '<line x1="27" y1="24" x2="27" y2="36" stroke-width="2.5"/>'
@@ -390,20 +393,15 @@ def serve_layout():
         [
             html.Header(
                 [
-                    html.Div(
+                    html.Span(
                         [
-                            html.Span(
-                                [
-                                    svg_img(CART_SVG, 24, 24, ""),
-                                    html.Span("Deal Tracker", className="wordmark-text"),
-                                ],
-                                className="wordmark",
-                            ),
-                            html.Span(
-                                f"Updated {updated.strftime('%H:%M')}", className="updated"
-                            ),
+                            svg_img(CART_SVG, 30, 30, ""),
+                            html.Span("Deal Tracker", className="wordmark-text"),
                         ],
-                        className="hdr-top",
+                        className="wordmark",
+                    ),
+                    html.Span(
+                        f"Updated {updated.strftime('%H:%M')}", className="updated"
                     ),
                     html.P(headline(rows), className="summary"),
                 ],
