@@ -295,7 +295,7 @@ def legend_item(color, label):
     )
 
 
-def card(row, is_open):
+def card(row):
     fmt_date = "%-d %b"
     return html.Details(
         [
@@ -364,7 +364,6 @@ def card(row, is_open):
             ),
         ],
         className="card",
-        open=is_open,
     )
 
 
@@ -469,9 +468,8 @@ def render_list(sort, store):
             count,
         )
 
-    # Best deal starts expanded on load; changing sort or store collapses everything.
-    open_first = dash.ctx.triggered_id is None
-    return [card(r, open_first and i == 0) for i, r in enumerate(shown)], count
+    # Every card starts collapsed; tapping one opens it.
+    return [card(r) for r in shown], count
 
 
 if __name__ == "__main__":
