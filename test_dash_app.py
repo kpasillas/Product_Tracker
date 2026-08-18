@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 """Self-check for the derived deal logic. Run: python test_dash_app.py"""
 
-from datetime import date, timedelta
+from datetime import datetime, date, timedelta
 
 from dash_app import (
+    PACIFIC,
     available_series,
     badge_for,
     chart,
     days_since_change,
     headline,
     relative_days,
+    updated_label,
 )
 
 
@@ -45,6 +47,15 @@ def test_days_since_change():
     assert relative_days(1) == "1 day ago"
     assert relative_days(0) == "Today"
     assert relative_days(None) == "3 mo+"
+
+
+def test_updated_label():
+    at_six = {"hour": 6, "minute": 15, "second": 0, "microsecond": 0}
+    now = datetime.now(PACIFIC).replace(**at_six)
+    assert updated_label(now) == "Updated today at 06:15"
+    assert updated_label(now - timedelta(days=1)) == "Updated yesterday at 06:15"
+    older = now - timedelta(days=5)
+    assert updated_label(older) == f"Updated {older.strftime('%-d %b')} at 06:15"
 
 
 def test_available_series():

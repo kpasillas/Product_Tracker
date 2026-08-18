@@ -1,11 +1,12 @@
 /* Deal Tracker — see design_handoff_deal_tracker/README.md.
-   Tokens come from assets/tokens.css (Peppy Design System). */
+   Tokens come from assets/tokens.css (Peppy Design System).
+   One responsive design: master-detail at >= 900px, tap-to-expand list below. */
 
 * { box-sizing: border-box; }
 
 html, body {
     margin: 0;
-    background: #f4f4f5;
+    background: var(--canvas);
     -webkit-font-smoothing: antialiased;
 }
 
@@ -14,34 +15,50 @@ body {
     color: var(--ink);
 }
 
-/* Scrollbars are hidden on the three scrolling surfaces. */
+/* Scrollbars are hidden on the scrolling surfaces. */
 .scroll::-webkit-scrollbar { width: 0; height: 0; }
 .scroll { scrollbar-width: none; }
 
 .app {
-    max-width: 480px;
-    margin: 0 auto;
-    height: 100dvh;
+    min-height: 100vh;
     background: var(--canvas);
     display: flex;
     flex-direction: column;
 }
 
-@media (min-width: 481px) {
-    .app { border-inline: 1px solid var(--hairline); }
-}
-
 /* ---- Header ---- */
 
-/* Ink band — polarity flip. The colour change is the divider, so no hairline. */
-.hdr {
+/* Ink bar and controls travel together, pinned at every width. */
+.hdr-block {
+    position: sticky;
+    top: 0;
+    z-index: 20;
     flex: 0 0 auto;
-    padding: 20px;
+    background: var(--canvas);
+}
+
+/* Ink band — polarity flip, full bleed. The colour change is the divider. */
+.hdr {
     background: var(--ink);
     color: var(--on-primary);
+}
+
+.hdr-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: clamp(20px, 2.4vw, 28px) clamp(16px, 4vw, 32px);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.hdr-lead {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    min-width: 0;
 }
 
 .wordmark {
@@ -53,10 +70,10 @@ body {
 .wordmark img { display: block; flex: 0 0 auto; }
 
 .wordmark-text {
-    font-size: 26px;
+    font-size: clamp(26px, 2.4vw, 32px);
     font-weight: var(--weight-semibold);
     letter-spacing: -0.5px;
-    line-height: 30px;
+    line-height: 1.15;
     color: var(--on-primary);
 }
 
@@ -70,25 +87,32 @@ body {
 }
 
 .summary {
-    margin: 4px 0 0;
+    margin: 0;
+    max-width: 52ch;
     font-size: 14px;
     line-height: 20px;
     color: var(--hairline);
 }
 
-/* ---- Sort bar ---- */
+/* ---- Sort + store filter (one wrapping row) ---- */
 
-.sortbar {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 12px 16px;
+.controls-bar {
+    background: var(--canvas);
     border-bottom: 1px solid var(--hairline);
 }
 
+.controls {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 12px clamp(16px, 4vw, 32px);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
 .count {
+    flex: 0 0 auto;
     font-size: 12px;
     font-weight: var(--weight-caption);
     letter-spacing: 0.6px;
@@ -110,6 +134,7 @@ body {
 }
 
 .segmented {
+    flex: 0 0 auto;
     display: inline-flex;
     border: 1px solid var(--hairline);
     border-radius: var(--radius-button);
@@ -162,14 +187,11 @@ body {
     }
 }
 
-/* ---- Store filter ---- */
-
 .chips {
-    flex: 0 0 auto;
+    flex: 1 1 auto;
+    min-width: 0;
     display: flex;
     gap: 8px;
-    padding: 10px 16px;
-    border-bottom: 1px solid var(--hairline);
     overflow-x: auto;
 }
 
@@ -182,10 +204,13 @@ body {
 
 /* ---- Product list ---- */
 
+/* Below the breakpoint the grid is a passthrough, so the list is the flex child
+   that fills the viewport and carries the tint. */
+.grid { display: contents; }
+
 .list {
     flex: 1 1 auto;
-    overflow-y: auto;
-    padding: 12px;
+    padding: 12px clamp(12px, 4vw, 16px) 32px;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -285,7 +310,7 @@ body {
 .badge-soft.badge-info    { color: var(--status-info); }
 .badge-soft.badge-neutral { color: var(--primary); }
 
-/* ---- Expanded detail ---- */
+/* ---- Detail (shared by the mobile expand and the desktop pane) ---- */
 
 .detail {
     margin-top: 12px;
@@ -298,8 +323,8 @@ body {
 
 .history {
     display: block;
-    max-width: 100%;
-    height: auto;
+    width: 100%;
+    height: 110px;
 }
 
 .legend {
@@ -323,6 +348,13 @@ body {
     width: 7px;
     height: 7px;
     border-radius: var(--radius-full);
+    flex: 0 0 auto;
+}
+
+/* The 3-month average marker is the dashed rule itself, not a dot. */
+.rule {
+    width: 12px;
+    height: 1px;
     flex: 0 0 auto;
 }
 
@@ -396,6 +428,135 @@ body {
     line-height: 20px;
     color: var(--body);
 }
+
+/* ---- Desktop: master-detail ---- */
+
+.pane { display: none; }
+
+@media (min-width: 900px) {
+    .grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+        gap: 32px;
+        align-items: start;
+        width: 100%;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 24px clamp(16px, 4vw, 32px) 48px;
+    }
+
+    .list {
+        padding: 0;
+        min-width: 0;
+        background: none;
+    }
+
+    /* Rows never expand at this width — selection drives the pane instead. */
+    .card .detail { display: none; }
+
+    .card {
+        cursor: pointer;
+        transition: background-color var(--duration-base) var(--ease-standard),
+                    border-color var(--duration-base) var(--ease-standard);
+    }
+
+    .card-top { gap: 16px; }
+
+    .card.selected {
+        background: #f7f7f8;
+        border-color: var(--ink);
+        border-left: 2px solid var(--ink);
+    }
+
+    @media (hover: hover) {
+        .card:not(.selected):hover { background: #f7f7f8; }
+    }
+
+    /* The pane clears the sticky header; --header-h is measured in accordion.js. */
+    .pane {
+        display: block;
+        position: sticky;
+        top: calc(var(--header-h, 148px) + 24px);
+        min-width: 0;
+    }
+
+    /* The list carries no empty state on desktop; the pane says it instead. */
+    .empty { display: none; }
+}
+
+.pane-card {
+    background: var(--canvas);
+    border: var(--elevation-1-border);
+    border-radius: var(--radius-card);
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.pane-empty { gap: 8px; }
+
+.pane-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.pane-lead {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.pane-store {
+    font-size: 12px;
+    font-weight: var(--weight-caption);
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--mute);
+}
+
+.pane-name {
+    font-size: 22px;
+    font-weight: var(--weight-semibold);
+    letter-spacing: -0.3px;
+    line-height: 28px;
+}
+
+.pane-badge { display: flex; }
+
+.pane-price {
+    flex: 0 0 auto;
+    font-size: 32px;
+    font-weight: var(--weight-semibold);
+    letter-spacing: -0.5px;
+    font-variant-numeric: tabular-nums;
+}
+
+.pane-chart {
+    display: block;
+    width: 100%;
+    height: 220px;
+}
+
+.pane .legend { gap: 24px; }
+
+.pane .stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    border-top: 1px solid var(--hairline);
+    padding-top: 20px;
+}
+
+.pane .stat { gap: 4px; }
+.pane .stat-value { font-size: 16px; }
+
+.pane-cta { display: flex; }
+.pane-cta .cta { width: auto; padding: 0 24px; }
 
 @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; }
