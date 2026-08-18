@@ -222,8 +222,10 @@ _cache = {"at": 0.0, "value": None}
 
 
 def load():
-    # ponytail: process-local TTL cache. Move to flask-caching if this ever runs
-    # on more than the single gunicorn worker it runs on today.
+    # ponytail: process-local TTL cache, one per worker — production runs
+    # gunicorn --workers 2, so the two caches expire independently and requests
+    # can straddle a refresh for up to CACHE_TTL_SECONDS. Fine for prices; move
+    # to flask-caching if the two views ever need to agree.
     if _cache["value"] is None or time.time() - _cache["at"] > CACHE_TTL_SECONDS:
         _cache["value"] = build_rows()
         _cache["at"] = time.time()
