@@ -5,12 +5,12 @@ Layout follows design_handoff_deal_tracker/README.md (Peppy Design System).
 """
 
 import time
-from datetime import date
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import dash
 import pandas as pd
-from dash import Input, Output, dcc, html
+from dash import ALL, Input, Output, ctx, dcc, html, no_update
 from sqlalchemy import text
 
 from db.connection import get_mysql_engine
@@ -132,6 +132,18 @@ def days_since_change(prices, dates):
     return None
 
 
+def updated_label(dt):
+    """Date-relative scrape timestamp — "Updated today at 06:15" (handoff)."""
+
+    today = datetime.now(dt.tzinfo).date()
+    clock = dt.strftime("%H:%M")
+    if dt.date() == today:
+        return f"Updated today at {clock}"
+    if dt.date() == today - timedelta(days=1):
+        return f"Updated yesterday at {clock}"
+    return f"Updated {dt.strftime('%-d %b')} at {clock}"
+
+
 def relative_days(days):
     if days is None:
         return "3 mo+"
@@ -187,6 +199,7 @@ def build_rows():
         low, high = min(prices), max(prices)
         label, tone, soft = badge_for(price, vs, low, high)
         big = chart(prices, 326, 110, 8, avg)
+        pane_c = chart(prices, 560, 220, 14, avg)
         spark = chart(prices, 88, 26, 4)
 
         rows.append({
@@ -198,7 +211,7 @@ def build_rows():
             "changed": relative_days(days_since_change(prices, dates)),
             "url": product_url(store, product_id),
             "cta": f"Buy on {store}" if store == "Amazon" else f"View on {store}",
-            "big": big, "spark": spark,
+            "big": big, "pane": pane_c, "spark": spark,
         })
 
     rows.sort(key=lambda r: r["vs"])
@@ -281,6 +294,25 @@ def history_svg(c):
     )
 
 
+def pane_svg(c):
+    # ponytail: the <img> stretches the box to the pane (object-fit: fill), which
+    # is the design's preserveAspectRatio="none" — but it stretches the stroke and
+    # markers with it, so vector-effect below is inert. Sub-pixel at these ratios;
+    # the fix is inline SVG, which Dash has no component for.
+    return (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-6 -6 572 232" width="560"'
+        ' height="220" preserveAspectRatio="none">'
+        f'<line x1="0" y1="{c["avg_y"]}" x2="560" y2="{c["avg_y"]}"'
+        f' stroke="{HAIRLINE}" stroke-width="1" stroke-dasharray="4 4"/>'
+        f'<polyline points="{c["points"]}" fill="none" stroke="{INK}" stroke-width="1.5"'
+        ' vector-effect="non-scaling-stroke"/>'
+        f'<circle cx="{c["high_x"]}" cy="{c["high_y"]}" r="4" fill="{MUTE_SOFT}"/>'
+        f'<circle cx="{c["low_x"]}" cy="{c["low_y"]}" r="4" fill="{SUCCESS}"/>'
+        f'<circle cx="{c["last_x"]}" cy="{c["last_y"]}" r="4.5" fill="{INK}"/>'
+        "</svg>"
+    )
+
+
 def stat(label, value):
     return html.Div(
         [html.Span(label, className="stat-label"), html.Span(value, className="stat-value")],
@@ -288,15 +320,55 @@ def stat(label, value):
     )
 
 
-def legend_item(color, label):
+def legend_item(color, label, rule=False):
     return html.Span(
-        [html.Span(className="dot", style={"background": color}), label],
+        [html.Span(className="rule" if rule else "dot", style={"background": color}), label],
         className="legend-item",
     )
 
 
-def card(row):
-    fmt_date = "%-d %b"
+FMT_DATE = "%-d %b"
+
+
+def legend(row, average=False):
+    items = [
+        legend_item(SUCCESS, f"Low {money(row['low'])} · {row['low_date'].strftime(FMT_DATE)}"),
+        legend_item(MUTE_SOFT, f"High {money(row['high'])} · {row['high_date'].strftime(FMT_DATE)}"),
+    ]
+    if average:
+        items.append(legend_item(HAIRLINE, "3-month average", rule=True))
+    return html.Div(items, className="legend")
+
+
+def stats(row):
+    return html.Div(
+        [
+            stat("3-mo avg", money(row["avg"])),
+            stat("vs avg", pct(row["vs"])),
+            stat("Changed", row["changed"]),
+        ],
+        className="stats",
+    )
+
+
+def badge(row):
+    return html.Span(
+        row["badge"],
+        className=f"badge badge-{row['tone']}" + (" badge-soft" if row["soft"] else ""),
+    )
+
+
+def cta(row):
+    return html.A(
+        row["cta"], href=row["url"], target="_blank",
+        rel="noopener noreferrer", className="cta",
+    )
+
+
+def card(row, selected=False):
+    """One list row. Collapsed below 900px until tapped; on desktop the <details>
+    body is hidden by CSS and the row only drives the pane."""
+
     return html.Details(
         [
             html.Summary(
@@ -305,14 +377,7 @@ def card(row):
                         [
                             html.Span(row["name"], className="name"),
                             html.Div(
-                                [
-                                    html.Span(row["store"], className="store"),
-                                    html.Span(
-                                        row["badge"],
-                                        className=f"badge badge-{row['tone']}"
-                                        + (" badge-soft" if row["soft"] else ""),
-                                    ),
-                                ],
+                                [html.Span(row["store"], className="store"), badge(row)],
                                 className="meta",
                             ),
                         ],
@@ -334,37 +399,58 @@ def card(row):
                         history_svg(row["big"]), 336, 120,
                         f"3-month price history for {row['name']}", "history",
                     ),
-                    html.Div(
-                        [
-                            legend_item(
-                                SUCCESS,
-                                f"Low {money(row['low'])} · {row['low_date'].strftime(fmt_date)}",
-                            ),
-                            legend_item(
-                                MUTE_SOFT,
-                                f"High {money(row['high'])} · {row['high_date'].strftime(fmt_date)}",
-                            ),
-                        ],
-                        className="legend",
-                    ),
-                    html.Div(
-                        [
-                            stat("3-mo avg", money(row["avg"])),
-                            stat("vs avg", pct(row["vs"])),
-                            stat("Changed", row["changed"]),
-                        ],
-                        className="stats",
-                    ),
-                    html.A(
-                        row["cta"], href=row["url"], target="_blank",
-                        rel="noopener noreferrer", className="cta",
-                    ),
+                    legend(row),
+                    stats(row),
+                    cta(row),
                 ],
                 className="detail",
             ),
         ],
-        className="card",
+        id={"type": "card", "index": row["id"]},
+        className="card selected" if selected else "card",
     )
+
+
+def pane(row):
+    """Desktop detail pane — the selected row, in full."""
+
+    return html.Div(
+        [
+            html.Div(
+                [
+                    html.Div(
+                        [
+                            html.Span(row["store"], className="pane-store"),
+                            html.Span(row["name"], className="pane-name"),
+                            html.Div(badge(row), className="pane-badge"),
+                        ],
+                        className="pane-lead",
+                    ),
+                    html.Span(money(row["price"]), className="pane-price"),
+                ],
+                className="pane-head",
+            ),
+            svg_img(
+                pane_svg(row["pane"]), 560, 220,
+                f"3-month price history for {row['name']}", "pane-chart",
+            ),
+            legend(row, average=True),
+            stats(row),
+            html.Div(cta(row), className="pane-cta"),
+        ],
+        className="pane-card",
+    )
+
+
+def empty(rows):
+    """Same copy either side of the breakpoint (handoff); the pane hosts it on
+    desktop, the list on mobile."""
+
+    if rows:
+        title, body = "No items match this store.", "Choose another store to see its tracked prices."
+    else:
+        title, body = "Nothing to show yet.", "Run the tracker to collect prices."
+    return [html.P(title, className="empty-title"), html.P(body, className="empty-body")]
 
 
 def headline(rows):
@@ -390,44 +476,65 @@ def serve_layout():
 
     return html.Div(
         [
-            html.Header(
+            # Ink bar and controls travel together: one sticky block at every width.
+            html.Div(
                 [
-                    html.Span(
-                        [
-                            svg_img(CART_SVG, 30, 30, ""),
-                            html.Span("Deal Tracker", className="wordmark-text"),
-                        ],
-                        className="wordmark",
+                    html.Header(
+                        html.Div(
+                            [
+                                html.Div(
+                                    [
+                                        html.Span(
+                                            [
+                                                svg_img(CART_SVG, 30, 30, ""),
+                                                html.Span("Deal Tracker", className="wordmark-text"),
+                                            ],
+                                            className="wordmark",
+                                        ),
+                                        html.Span(updated_label(updated), className="updated"),
+                                    ],
+                                    className="hdr-lead",
+                                ),
+                                html.P(headline(rows), className="summary"),
+                            ],
+                            className="hdr-inner",
+                        ),
+                        className="hdr",
                     ),
-                    html.Span(
-                        f"Updated {updated.strftime('%H:%M')}", className="updated"
+                    html.Div(
+                        html.Div(
+                            [
+                                dcc.RadioItems(
+                                    id="sort",
+                                    options=[
+                                        {"label": "Deal", "value": "deal"},
+                                        {"label": "Price", "value": "price"},
+                                    ],
+                                    value="deal",
+                                    className="segmented",
+                                ),
+                                dcc.RadioItems(
+                                    id="store",
+                                    options=stores,
+                                    value="All stores",
+                                    className="chips scroll",
+                                ),
+                                html.Span(id="count", className="count"),
+                            ],
+                            className="controls",
+                        ),
+                        className="controls-bar",
                     ),
-                    html.P(headline(rows), className="summary"),
                 ],
-                className="hdr",
+                className="hdr-block",
             ),
             html.Div(
                 [
-                    dcc.RadioItems(
-                        id="sort",
-                        options=[
-                            {"label": "Deal", "value": "deal"},
-                            {"label": "Price", "value": "price"},
-                        ],
-                        value="deal",
-                        className="segmented",
-                    ),
-                    html.Span(id="count", className="count"),
+                    html.Div(id="deal-list", className="list"),
+                    html.Div(id="pane", className="pane"),
                 ],
-                className="sortbar",
+                className="grid",
             ),
-            dcc.RadioItems(
-                id="store",
-                options=stores,
-                value="All stores",
-                className="chips scroll",
-            ),
-            html.Div(id="deal-list", className="list scroll"),
         ],
         className="app",
     )
@@ -439,37 +546,38 @@ app.layout = serve_layout
 @app.callback(
     Output("deal-list", "children"),
     Output("count", "children"),
+    Output("pane", "children"),
     Input("sort", "value"),
     Input("store", "value"),
+    Input({"type": "card", "index": ALL}, "n_clicks"),
 )
-def render_list(sort, store):
-    # ponytail: server round-trip per sort/filter tap. Cards are prebuilt from the
-    # cached rows, so it is one render; go clientside only if it ever feels slow.
+def render_list(sort, store, _clicks):
+    # ponytail: server round-trip per sort/filter/select tap. Cards are prebuilt from
+    # the cached rows, so it is one render; go clientside only if it ever feels slow.
     rows, _ = load()
     shown = [r for r in rows if store == "All stores" or r["store"] == store]
     shown.sort(key=lambda r: r["price"] if sort == "price" else r["vs"])
 
+    # A row click only swaps the pane. Re-rendering the list here would throw away
+    # the <details open> state and break the mobile expand.
+    if isinstance(ctx.triggered_id, dict):
+        picked = ctx.triggered_id["index"]
+        return no_update, no_update, pane(next(r for r in shown if r["id"] == picked))
+
     count = f"{len(rows)} tracked" if store == "All stores" else f"{len(shown)} of {len(rows)}"
 
     if not shown:
-        next_step = (
-            "Run the tracker to collect prices."
-            if not rows
-            else "Pick another store to see current deals."
-        )
-        return (
-            html.Div(
-                [
-                    html.P("Nothing to show yet.", className="empty-title"),
-                    html.P(next_step, className="empty-body"),
-                ],
-                className="empty",
-            ),
-            count,
+        return html.Div(empty(rows), className="empty"), count, html.Div(
+            empty(rows), className="pane-card pane-empty"
         )
 
-    # Every card starts collapsed; tapping one opens it.
-    return [card(r) for r in shown], count
+    # Every card starts collapsed; tapping one opens it. On desktop the first row is
+    # the selection, and the pane follows it.
+    return (
+        [card(r, selected=i == 0) for i, r in enumerate(shown)],
+        count,
+        pane(shown[0]),
+    )
 
 
 if __name__ == "__main__":
