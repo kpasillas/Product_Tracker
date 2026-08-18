@@ -17,20 +17,7 @@ packages:
   - software-properties-common
   - git
   - curl
-  - build-essential
   - ca-certificates
-  - libssl-dev
-  - zlib1g-dev
-  - libbz2-dev
-  - libreadline-dev
-  - libsqlite3-dev
-  - libncursesw5-dev
-  - xz-utils
-  - tk-dev
-  - libxml2-dev
-  - libxmlsec1-dev
-  - libffi-dev
-  - liblzma-dev
   - jq
   - google-chrome-stable
   - chromium-chromedriver
@@ -70,9 +57,6 @@ write_files:
       HOME="/home/${USER}"
       APP_DIR="${HOME}/Product_Tracker"
 
-      export PYENV_ROOT="$HOME/.pyenv"
-      export PATH="$PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH"
-
       echo "=== Setup Product Tracker Starting ==="
 
       # Baked in at render time by envsubst
@@ -103,20 +87,19 @@ write_files:
       TAILSCALE_AUTHKEY="${TAILSCALE_AUTHKEY}"
 
       echo "Install & connect Tailscale - Start"
-      curl -fsSL https://tailscale.com/install.sh | sh
+      # Never pipe a fetch straight into a shell: without -f, an HTTP error body
+      # gets executed as a script. Download, let -f fail loudly, then run.
+      curl -fsSL https://tailscale.com/install.sh -o /tmp/ts-install.sh
+      sh /tmp/ts-install.sh
       sudo tailscale up --authkey="${TAILSCALE_AUTHKEY}" --hostname="product-tracker-scraper"
       echo "Install & connect Tailscale - Finish"
 
-      echo "Build pyenv - Start"
-      curl -fsSL https://pyenv.run | bash
-      eval "$(pyenv init --path)"
-      eval "$(pyenv init -)"
-      echo "Build pyenv - Finish"
-
-      echo "Build Python - Start"
-      pyenv install 3.13.5
-      pyenv global 3.13.5
-      echo "Build Python - Finish"
+      echo "Install Python - Start"
+      # apt from Linode's in-datacenter mirror, not GitHub: pyenv fetched its
+      # installer from raw.githubusercontent, which throttles shared cloud egress.
+      sudo add-apt-repository -y ppa:deadsnakes/ppa
+      sudo apt-get install -y python3.13 python3.13-venv
+      echo "Install Python - Finish"
 
       echo "Git Clone - Start"
       sudo -u "${USER}" git clone https://github.com/kpasillas/Product_Tracker.git "${APP_DIR}"
@@ -127,7 +110,7 @@ write_files:
       echo "Setup venv - Start"
       cd ${APP_DIR}
       echo "Create venv"
-      python -m venv .venv
+      python3.13 -m venv .venv
       echo "Activate venv"
       source .venv/bin/activate
       echo "Install pip packages"
@@ -169,7 +152,7 @@ write_files:
       
       get_metadata_token() {
         curl -s -f -X PUT \
-          -H "Metadata-Token-TTL-Seconds: 300" \
+          -H "Metadata-Token-Expiry-Seconds: 300" \
           http://169.254.169.254/v1/token
       }
       
@@ -177,6 +160,7 @@ write_files:
         local token="$1"
         curl -s -f \
           -H "Metadata-Token: ${token}" \
+          -H "Accept: application/json" \
           http://169.254.169.254/v1/instance
       }
       
@@ -216,11 +200,12 @@ write_files:
       
       echo "Fetching Linode metadata..."
 
-      LINODE_ID="$(linode-cli linodes list --text | grep "product-tracker" | awk '{print $1}')"
-      LINODE_IP="$(linode-cli linodes list --text | grep "product-tracker" | awk '{print $7}')"
+      # Label matching deleted the wrong box when a stray or concurrent run existed.
+      # Fail soft: an empty ID falls through to the else branch below, which alerts.
+      METADATA_TOKEN="$(get_metadata_token || true)"
+      LINODE_ID="$(get_instance_metadata "$METADATA_TOKEN" | jq -r '.id // empty' || true)"
 
       echo "Linode ID: $LINODE_ID"
-      echo "Linode IP: $LINODE_IP"
 
       echo "🔥 Deleting Linode ID: $LINODE_ID"
       
