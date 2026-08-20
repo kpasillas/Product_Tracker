@@ -367,7 +367,7 @@ def cta(row):
     )
 
 
-def card(row, selected=False):
+def card(row, selected=False, key=None):
     """One list row. Collapsed below 900px until tapped; on desktop the <details>
     body is hidden by CSS and the row only drives the pane."""
 
@@ -409,6 +409,10 @@ def card(row, selected=False):
             ),
         ],
         id={"type": "card", "index": row["id"]},
+        # accordion.js moves the selected class in the DOM, which React never sees.
+        # A key that changes with the list order remounts the cards, so the server's
+        # mark wins on every sort/filter render instead of leaving a stale highlight.
+        key=key,
         className="card selected" if selected else "card",
     )
 
@@ -576,7 +580,10 @@ def render_list(sort, store, _clicks):
     # Every card starts collapsed; tapping one opens it. On desktop the first row is
     # the selection, and the pane follows it.
     return (
-        [card(r, selected=i == 0) for i, r in enumerate(shown)],
+        [
+            card(r, selected=i == 0, key=f"{sort}-{store}-{r['id']}")
+            for i, r in enumerate(shown)
+        ],
         count,
         pane(shown[0]),
     )
