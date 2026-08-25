@@ -114,9 +114,10 @@ jobs:
               echo WAIT
             fi'
 
-          # pip alone installs ~90 packages (numpy, pandas, selenium) and the
-          # whole of setup measured ~18 min, so this budget is deliberately
-          # loose — a false red is worse than waiting on a genuinely dead box.
+          # Setup is wildly variable: two consecutive runs measured 5 min and
+          # 18+ min for the same code, depending on apt/pip mirror speed and
+          # whether the deadsnakes retry burns its backoff. Budget for the bad
+          # day — a false red is worse than waiting on a genuinely dead box.
           for i in {1..120}; do
             case "$(ssh_vm "$probe" 2>/dev/null)" in
               DONE)
