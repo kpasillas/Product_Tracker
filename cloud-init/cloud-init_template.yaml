@@ -97,7 +97,13 @@ write_files:
       echo "Install Python - Start"
       # apt from Linode's in-datacenter mirror, not GitHub: pyenv fetched its
       # installer from raw.githubusercontent, which throttles shared cloud egress.
-      sudo add-apt-repository -y ppa:deadsnakes/ppa
+      # Launchpad's key API 500s intermittently (GPGKeyTemporarilyNotFoundError),
+      # which kills the whole boot. Retry before giving up.
+      for i in 1 2 3 4 5; do
+        sudo add-apt-repository -y ppa:deadsnakes/ppa && break
+        echo "add-apt-repository failed (attempt $i), retrying in $((i * 15))s"
+        sleep $((i * 15))
+      done
       sudo apt-get install -y python3.13 python3.13-venv
       echo "Install Python - Finish"
 
