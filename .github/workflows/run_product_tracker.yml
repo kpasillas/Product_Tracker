@@ -102,6 +102,15 @@ jobs:
                 root@"$LINODE_IP" "$1"
           }
 
+          # The box is deleted on failure, so this dump is the only forensics
+          # that survives. pip's download spam can fill 60 lines on its own —
+          # drop it so the actual steps stay visible.
+          dump_journal() {
+            ssh_vm 'journalctl -u setup-product-tracker.service --no-pager \
+                      | grep -vE "Downloading |[0-9.]+/[0-9.]+ [kMG]B|━" \
+                      | tail -60' || true
+          }
+
           # One round trip per poll. systemd is the source of truth for
           # failure: a crash lands in "failed" rather than just never
           # producing the marker.
@@ -126,7 +135,7 @@ jobs:
                 ;;
               FAILED)
                 echo "::error::setup-product-tracker.service failed"
-                ssh_vm 'journalctl -u setup-product-tracker.service --no-pager | tail -60' || true
+                dump_journal
                 exit 1
                 ;;
             esac
@@ -134,5 +143,18 @@ jobs:
           done
 
           echo "::error::setup did not finish within 30 minutes"
-          ssh_vm 'journalctl -u setup-product-tracker.service --no-pager | tail -60' || true
+          dump_journal
           exit 1
+
+      # --------------------------------------------------
+      # 7. Clean up a Linode that will never clean itself up
+      # --------------------------------------------------
+      # Self-destruct lives at the end of the *run* script, so any failure
+      # before that strands a billing nanode. Delete by the id captured at
+      # create time, never by label — label matching has deleted the wrong
+      # box when a stray or concurrent run existed.
+      - name: Delete Linode on failure
+        if: failure() && env.LINODE_ID != ''
+        run: |
+          echo "Deleting orphaned Linode $LINODE_ID"
+          linode-cli linodes delete "$LINODE_ID"
