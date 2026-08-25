@@ -86,3 +86,39 @@ jobs:
             sleep 10
           done
           exit 1
+
+      # --------------------------------------------------
+      # 6. Wait for cloud-init setup to finish
+      # --------------------------------------------------
+      # SSH answering only means sshd is up — cloud-init keeps running for
+      # minutes afterwards. Without this gate the job reports success even
+      # when setup dies, so a broken build looks identical to a good one.
+      - name: Wait for setup to succeed
+        run: |
+          ssh_vm() {
+            ssh -i /tmp/linode_ssh \
+                -o StrictHostKeyChecking=no \
+                -o ConnectTimeout=5 \
+                root@"$LINODE_IP" "$1"
+          }
+
+          for i in {1..90}; do
+            # systemd is the source of truth: a crash lands in "failed"
+            # rather than just never producing the marker.
+            if ssh_vm 'systemctl is-failed --quiet setup-product-tracker.service'; then
+              echo "::error::setup-product-tracker.service failed"
+              ssh_vm 'journalctl -u setup-product-tracker.service --no-pager | tail -60' || true
+              exit 1
+            fi
+
+            if ssh_vm 'test -f /home/kpasillas/.setup_product_tracker_done'; then
+              echo "Setup completed"
+              exit 0
+            fi
+
+            sleep 10
+          done
+
+          echo "::error::setup did not finish within 15 minutes"
+          ssh_vm 'journalctl -u setup-product-tracker.service --no-pager | tail -60' || true
+          exit 1
