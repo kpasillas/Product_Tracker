@@ -136,7 +136,7 @@ jobs:
                 # whether ntfy actually accepted the publish (200) or refused
                 # it (400 bad topic, 403 auth, 429 rate limit).
                 ssh_vm 'journalctl -u setup-product-tracker.service --no-pager \
-                          | grep "ntfy:"' || true
+                          | grep -E "ntfy[-a-z]*:"' || true
                 exit 0
                 ;;
               FAILED)
