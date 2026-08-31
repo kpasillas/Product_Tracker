@@ -76,14 +76,19 @@ write_files:
         # on older bash; this stays correct on both.
         local auth=()
         [[ -n "${NTFY_TOKEN}" ]] && auth=(-H "Authorization: Bearer ${NTFY_TOKEN}")
-        local code
-        code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 \
+        # ntfy names the exact limit it refused on in the response body, and
+        # that body is the only way to tell an IP limit from an account one.
+        local code body
+        body=$(curl -s -w '\n%{http_code}' --max-time 10 \
           ${auth[@]+"${auth[@]}"} \
           -H "Title: ${title}" \
           -H "Priority: default" \
           -d "${msg}" \
-          "https://ntfy.sh/${NTFY_TOPIC}") || code="curl-exit-$?"
-        echo "ntfy: ${code} ${title}"
+          "https://ntfy.sh/${NTFY_TOPIC}") || body=$'\ncurl-exit-'"$?"
+        code="${body##*$'\n'}"
+        body="${body%$'\n'*}"
+        echo "ntfy: ${code} auth=${#auth[@]} ${title}"
+        [[ "$code" == 2?? ]] || echo "ntfy-error: ${body:0:300}"
       }
 
       # Notify on unexpected failure
@@ -209,14 +214,19 @@ write_files:
         # on older bash; this stays correct on both.
         local auth=()
         [[ -n "${NTFY_TOKEN}" ]] && auth=(-H "Authorization: Bearer ${NTFY_TOKEN}")
-        local code
-        code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 \
+        # ntfy names the exact limit it refused on in the response body, and
+        # that body is the only way to tell an IP limit from an account one.
+        local code body
+        body=$(curl -s -w '\n%{http_code}' --max-time 10 \
           ${auth[@]+"${auth[@]}"} \
           -H "Title: ${title}" \
           -H "Priority: default" \
           -d "${msg}" \
-          "https://ntfy.sh/${NTFY_TOPIC}") || code="curl-exit-$?"
-        echo "ntfy: ${code} ${title}"
+          "https://ntfy.sh/${NTFY_TOPIC}") || body=$'\ncurl-exit-'"$?"
+        code="${body##*$'\n'}"
+        body="${body%$'\n'*}"
+        echo "ntfy: ${code} auth=${#auth[@]} ${title}"
+        [[ "$code" == 2?? ]] || echo "ntfy-error: ${body:0:300}"
       }
 
       # Notify on unexpected failure

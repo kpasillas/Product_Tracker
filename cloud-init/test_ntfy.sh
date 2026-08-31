@@ -24,8 +24,8 @@ run_case() {
     # Stub curl: report whether an auth header arrived, then emit an http code
     # the way -w '%{http_code}' would.
     curl() {
-      [[ "$*" == *"Authorization: Bearer ${token}"* && -n "$token" ]] && echo -n "auth "
-      echo -n "200"
+      [[ "$*" == *"Authorization: Bearer ${token}"* && -n "$token" ]] && echo "auth"
+      echo "200"
     }
     eval "$FN"
     ntfy_notify "title" "msg"
@@ -33,7 +33,7 @@ run_case() {
     # in a new shape, so prove execution continues past the notify.
     echo "survived"
   )"
-  local want="ntfy: ${expect_auth}200 title
+  local want="ntfy: 200 auth=${expect_auth} title
 survived"
   [[ "$actual" == "$want" ]] \
     && echo "ok   - $desc" \
@@ -41,8 +41,8 @@ survived"
 }
 
 run_case "a token is sent as a bearer header, so ntfy meters the account not the IP" \
-  "tk_test" "auth "
+  "tk_test" "2"
 run_case "no token still publishes, and never aborts the run" \
-  "" ""
+  "" "0"
 
 echo "all ntfy checks passed"
