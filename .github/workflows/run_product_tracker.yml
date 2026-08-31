@@ -131,6 +131,11 @@ jobs:
             case "$(ssh_vm "$probe" 2>/dev/null)" in
               DONE)
                 echo "Setup completed after ~$((i * 15))s"
+                # The box self-destructs, so this is the only chance to see
+                # whether ntfy actually accepted the publish (200) or refused
+                # it (400 bad topic, 403 auth, 429 rate limit).
+                ssh_vm 'journalctl -u setup-product-tracker.service --no-pager \
+                          | grep "ntfy:"' || true
                 exit 0
                 ;;
               FAILED)

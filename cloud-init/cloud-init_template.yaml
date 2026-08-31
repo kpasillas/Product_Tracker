@@ -66,11 +66,15 @@ write_files:
       ntfy_notify() {
         local title="$1"
         local msg="$2"
-        curl -s -o /dev/null \
+        # Still best-effort, but not silent: the box is deleted right after the
+        # run, so this journal line is the only evidence a publish was refused.
+        local code
+        code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 \
           -H "Title: ${title}" \
           -H "Priority: default" \
           -d "${msg}" \
-          "https://ntfy.sh/${NTFY_TOPIC}" || true
+          "https://ntfy.sh/${NTFY_TOPIC}") || code="curl-exit-$?"
+        echo "ntfy: ${code} ${title}"
       }
 
       # Notify on unexpected failure
@@ -186,11 +190,15 @@ write_files:
       ntfy_notify() {
         local title="$1"
         local msg="$2"
-        curl -s -o /dev/null \
+        # Still best-effort, but not silent: the box is deleted right after the
+        # run, so this journal line is the only evidence a publish was refused.
+        local code
+        code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 \
           -H "Title: ${title}" \
           -H "Priority: default" \
           -d "${msg}" \
-          "https://ntfy.sh/${NTFY_TOPIC}" || true
+          "https://ntfy.sh/${NTFY_TOPIC}") || code="curl-exit-$?"
+        echo "ntfy: ${code} ${title}"
       }
 
       # Notify on unexpected failure
@@ -216,9 +224,9 @@ write_files:
       echo "🔥 Deleting Linode ID: $LINODE_ID"
       
       if [[ -n "$LINODE_ID" ]]; then
+        ntfy_notify "✅ Product Tracker" "Completed successfully at $(date -u)"
         echo "Destroying Linode $LINODE_ID"
         linode-cli linodes delete "$LINODE_ID"
-        ntfy_notify "✅ Product Tracker" "Completed successfully at $(date -u)"
       else
         echo "ERROR: LINODE_ID not set — skipping self-destruction"
         ntfy_notify "❌ Product Tracker" "Linode failed to self-destruct at $(date -u)"
