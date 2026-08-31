@@ -61,6 +61,7 @@ write_files:
 
       # Baked in at render time by envsubst
       NTFY_TOPIC="${NTFY_TOPIC}"
+      NTFY_TOKEN="${NTFY_TOKEN}"
 
       # Send ntfy notification (best-effort — never fail the script)
       ntfy_notify() {
@@ -68,8 +69,16 @@ write_files:
         local msg="$2"
         # Still best-effort, but not silent: the box is deleted right after the
         # run, so this journal line is the only evidence a publish was refused.
+        # Anonymous publishes are rate-limited per source IP, and these boxes
+        # get recycled Linode addresses that are already over budget — every
+        # publish came back 429. Authenticated ones meter against the account.
+        # ${auth[@]+...} because set -u rejects a bare empty-array expansion
+        # on older bash; this stays correct on both.
+        local auth=()
+        [[ -n "${NTFY_TOKEN}" ]] && auth=(-H "Authorization: Bearer ${NTFY_TOKEN}")
         local code
         code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 \
+          ${auth[@]+"${auth[@]}"} \
           -H "Title: ${title}" \
           -H "Priority: default" \
           -d "${msg}" \
@@ -185,6 +194,7 @@ write_files:
 
       # Baked in at render time by envsubst
       NTFY_TOPIC="${NTFY_TOPIC}"
+      NTFY_TOKEN="${NTFY_TOKEN}"
 
       # Send ntfy notification (best-effort — never fail the script)
       ntfy_notify() {
@@ -192,8 +202,16 @@ write_files:
         local msg="$2"
         # Still best-effort, but not silent: the box is deleted right after the
         # run, so this journal line is the only evidence a publish was refused.
+        # Anonymous publishes are rate-limited per source IP, and these boxes
+        # get recycled Linode addresses that are already over budget — every
+        # publish came back 429. Authenticated ones meter against the account.
+        # ${auth[@]+...} because set -u rejects a bare empty-array expansion
+        # on older bash; this stays correct on both.
+        local auth=()
+        [[ -n "${NTFY_TOKEN}" ]] && auth=(-H "Authorization: Bearer ${NTFY_TOKEN}")
         local code
         code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 \
+          ${auth[@]+"${auth[@]}"} \
           -H "Title: ${title}" \
           -H "Priority: default" \
           -d "${msg}" \
