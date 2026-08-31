@@ -96,14 +96,6 @@ write_files:
 
       ntfy_notify "🎬 Product Tracker" "Started at $(date -u)"
 
-      # TEMP diagnostic: ntfy applies per-account limits only to tiered
-      # accounts and falls back to per-IP otherwise. Ask it directly.
-      echo "ntfy-account: $(curl -s --max-time 10 \
-        -H "Authorization: Bearer ${NTFY_TOKEN}" \
-        https://ntfy.sh/v1/account \
-        | jq -c '{tier: .tier.name, role: .role, limits: .limits, stats: .stats}' \
-        || echo "probe failed")"
-
       if [[ "$HOME" != "/home/kpasillas" ]]; then
         echo "ERROR: Incorrect HOME detected: $HOME"
         exit 1
