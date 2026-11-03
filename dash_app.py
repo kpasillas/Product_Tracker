@@ -171,6 +171,8 @@ def available_series(prices, dates):
 def product_url(store, product_id):
     if store == "Amazon":
         return f"https://www.amazon.com/dp/{product_id}"
+    if store == "PlayStation":
+        return f"https://store.playstation.com/en-us/product/{product_id}"
     return f"https://www.cheapcharts.com/us/itunes/movies/{product_id}"
 
 

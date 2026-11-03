@@ -5,6 +5,7 @@ from get_report_id import get_report_id
 from update_amazon_product_list import update_amazon_product_list
 from update_amazon_product_price import update_amazon_product_price
 from update_appletv_product_price import update_appletv_product_price
+from update_playstation_product_price import update_playstation_product_price
 
 # from send_tracker_results import email_tracker_results
 
@@ -31,6 +32,9 @@ def main():
 
     logger.info("Updating Apple TV product prices...")
     update_appletv_product_price(engine, report_record)
+
+    logger.info("Updating PlayStation product prices...")
+    update_playstation_product_price(engine, report_record)
 
     # logger.info("Sending tracker results...")
     # email_tracker_results(engine)
